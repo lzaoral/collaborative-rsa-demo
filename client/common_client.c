@@ -10,21 +10,21 @@ int generateRSAKeys() {
     BIGNUM *p = NULL;
     BIGNUM *q = NULL;
 
-    printf("Generating p...");
+    printf("Generating p...\n");
     if (generateLSSafePrime(&p)) {
         printf("neco se posralo\n");
         getchar();
         return EXIT_FAILURE;
     }
 
-    printf("Generating q...");
+    printf("Generating q...\n");
     if (generateLSSafePrime(&q)) {
         printf("neco se posralo\n");
         getchar();
         return EXIT_FAILURE;
     }
 
-    printf("Key generated!\n");
+    printf("(2^%d-2^%d)-safe primes generated!\n", RSA_L_BITS, RSA_S_BITS);
     printf("p: %s\nq: %s\n", BN_bn2dec(p), BN_bn2dec(q));
 
     getchar();
@@ -40,6 +40,7 @@ int generateLSSafePrime(BIGNUM **safePrime) {
     BIGNUM *tmp = NULL;
 
     while (!isSafe) {
+        
         // GENERATE RANDOM L-PRIMES
         const int count = 10;
         BIGNUM *primes[count];
@@ -53,13 +54,6 @@ int generateLSSafePrime(BIGNUM **safePrime) {
             }
         }
         
-        /*
-        for (size_t i = 0; i < count; i++) {
-            char *string = BN_bn2dec(primes[i]);
-            printf("Cislo %d: %s\n", (int) i + 1, string);
-        }
-        */
-
         // MULTIPLY ALL L-PRIMES
         if (!BN_dec2bn(&tmp, "1")) {
             goto err;
@@ -71,9 +65,11 @@ int generateLSSafePrime(BIGNUM **safePrime) {
             }            
         }
 
-        // printf("Cislo: %s\n", BN_bn2dec(tmp));
+        for (size_t i = 0; i < count; i++) {
+            BN_free(primes[i]);
+        }
 
-        // MULTIPLY WITH RANDOM a, two and add 1 
+        // MULTIPLY WITH RANDOM S >= a and 2 and then add 1 
         unsigned char aBuffer[RSA_L_BITS / 8];
         
         if (!RAND_bytes(aBuffer, RSA_L_BITS / 8)) {
@@ -95,11 +91,7 @@ int generateLSSafePrime(BIGNUM **safePrime) {
             goto err;
         }
 
-        // printf("Cislo: %s\n", BN_bn2dec(tmp));
-
-        for (size_t i = 0; i < count; i++) {
-            BN_free(primes[i]);
-        }
+        
 
         // PRIMALITY TEST
         if (BN_is_prime_ex(tmp, BN_prime_checks, tempBN, NULL) == 1) {
@@ -107,61 +99,14 @@ int generateLSSafePrime(BIGNUM **safePrime) {
             *safePrime = tmp;
             tmp = NULL;
 
-            printf("Found a (%d-%d)-prime: %s\n", RSA_L_BITS, RSA_S_BITS, BN_bn2dec(*safePrime));
-            getchar();
-            getchar();
-            getchar();
+            printf("Found a (2^%d-2^%d)-prime: %s\n\n\n", RSA_L_BITS, RSA_S_BITS, BN_bn2dec(*safePrime));
 
             BN_CTX_free(tempBN);
 
             return EXIT_SUCCESS;
         }
 
-        continue;
-
-        // TODO: lol
-        return EXIT_FAILURE;
-        /*printf("Su vnu\n");
-
-        getchar();
-
-        if (!BN_generate_prime_ex(safePrime, 2048, 0, NULL, NULL, NULL)) {
-            goto err;
-        }
-
-        char *string = BN_bn2dec(safePrime);
-        printf("Cislo: %s\n", string);
-
-        getchar();
-
-        // subtract one
-        BIGNUM *one;
-
-        if (!BN_dec2bn(&one, "1")) {
-            goto err;
-        }        
-
-        if (!BN_sub(safePrime, safePrime, one)) {
-            goto err;
-        }
-
-        string = BN_bn2dec(safePrime);
-        printf("Cislo - 1: %s\n", string);
-
-        getchar();
-
-        // divide by two      
-        if (!BN_rshift1(safePrime, safePrime)) {
-            goto err;
-        }
-
-        string = BN_bn2dec(safePrime);
-        printf("(Cislo - 1) / 2: %s\n", string);
-
-        getchar();
-        */
-
-
+        continue;        
 
     err:
         printf("neco se posralo\n");

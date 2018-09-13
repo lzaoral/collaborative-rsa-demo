@@ -32,7 +32,7 @@ int main()
             return EXIT_SUCCESS;
         case 1:
 
-            printf("Generating keys...\n");
+            printf("Generating keys...\n\n");
 
             if (generateRSAKeys())
             {
