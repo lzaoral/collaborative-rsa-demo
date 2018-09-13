@@ -1,8 +1,8 @@
 #ifndef COMMON_CLIENT_H
 #define COMMON_CLIENT_H
 
-#define RSA_L 65536
-#define RSA_S 1.606938e+60
+#define RSA_L_BITS 16
+#define RSA_S_BITS 200
 #define RSA_MODULUS
 
 #define SECURITY_BITS 112
