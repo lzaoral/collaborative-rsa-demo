@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(collabrsa)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -Wall -Wextra -pedantic")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -Wall -Wextra -pedantic -Werror")
 link_libraries(ssl crypto)
 
 set(COLLAB_RSA_CLIENT_SOURCE client/main_client.c client/common_client.c)
