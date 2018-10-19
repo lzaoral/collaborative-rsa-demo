@@ -8,15 +8,19 @@
 
 #define SECURITY_BITS 112
 
-
 /**
  * Generates and stores keys required for encryption.
  */
-int generateRSAKeys();
+int generateRSAKeys(BIGNUM **e, BIGNUM **d, BIGNUM **n);
 
 /**
  * Generates an (l,s)-safe prime number
  */
-int generateLSSafePrime(BIGNUM *const e, BIGNUM **const safePrime, BIGNUM **const phiSafePrime, BN_CTX *const ctx);
+int generateLSSafePrime(BIGNUM const *const e, BIGNUM **const safePrime, BIGNUM **const phiSafePrime, BN_CTX *const ctx);
+
+/**
+ * 
+ */
+int runTest();
 
 #endif // COMMON_CLIENT_H
