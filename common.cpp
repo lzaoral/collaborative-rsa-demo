@@ -6,29 +6,31 @@
 
 const std::pair<Bignum, Bignum> RSA_Keys::generateRSAKeys() {
 	Bignum_CTX ctx;
+	while (true) {
+		try {
+			if (verbose)
+				std::cout << "Generating p...\n";
 
-	std::cout << "Generating p...\n";
-	const std::pair<Bignum, Bignum> p = generateSafePrime();
+			const std::pair<Bignum, Bignum> p = generateSafePrime(false);
 
-	std::cout << "Generating q...\n";
-	const std::pair<Bignum, Bignum> q = generateSafePrime();
+			if (verbose)
+				std::cout << "Generating q...\n";
 
-	std::cout << "(2^" << RSA_L_BITS << "-2^" << RSA_S_BITS << ")-safe primes generated!\n\n";
+			const std::pair<Bignum, Bignum> q = generateSafePrime(true);
 
-	return { generatePublicModulus(p.first, q.first), generatePrivateKey(p.second, q.second) };
+			if (verbose)
+				std::cout << "(2^" << RSA_L_BITS << "-2^" << RSA_S_BITS << ")-safe primes generated!\n\n";
+
+			return { generatePublicModulus(p.first, q.first), generatePrivateKey(p.second, q.second) };
+
+		} catch (const std::out_of_range& err) {
+			std::cerr << err.what() << "\nRetrying...\n\n";
+		}
+	}
 }
 
 std::vector<Bignum> RSA_Keys::generateSPrimes() const {
-	// TODO: random count of primes?
-	/*
-    if (!RAND_bytes(&count, 1)) {
-        printf("Something went wrong! :(\n");
-        getchar();
-
-
-        return EXIT_FAILURE;
-    }
-    */
+	// handleError(RAND_bytes(&count, 1)); TODO: random count of s-primes?
 
 	std::vector<Bignum> primes;
 
@@ -38,7 +40,7 @@ std::vector<Bignum> RSA_Keys::generateSPrimes() const {
 
 		do {
 			handleError(RAND_bytes(&sbitCount, 1));
-		} while (sbitCount <= RSA_S_BITS);
+		} while (sbitCount <= RSA_S_BITS || 245 < sbitCount);
 
 		handleError(BN_generate_prime_ex(primes[i].get(), sbitCount, 0, nullptr, nullptr, nullptr));
 	}
@@ -55,7 +57,14 @@ Bignum RSA_Keys::multiplySPrimes(const std::vector<Bignum>& SPrimes) {
 	return result;
 }
 
-Bignum& RSA_Keys::multiplyBy2a(Bignum& result) {
+void RSA_Keys::applyMask(Bignum& result, bool longer) { // not the best solution
+	handleError(BN_set_bit(result.get(), RSA_MODULUS_BITS / 4 - (longer ? 0 : 1)));
+
+	if (BN_num_bits(result.get()) > 512 + (longer ? 1 : 0))
+		handleError(BN_mask_bits(result.get(), RSA_MODULUS_BITS / 4));
+}
+
+Bignum& RSA_Keys::multiplyBy2a(Bignum& result, bool longer) {
 	const int bytesCount = RSA_L_BITS / 8;
 
 	std::vector<unsigned char> aBuffer(bytesCount);
@@ -66,31 +75,36 @@ Bignum& RSA_Keys::multiplyBy2a(Bignum& result) {
 
 	handleError(BN_mul_word(result.get(), a * 2));
 
+	applyMask(result, longer);
 	return result;
 }
 
-const std::pair<Bignum, Bignum> RSA_Keys::generateSafePrime() {
+const std::pair<Bignum, Bignum> RSA_Keys::generateSafePrime(bool longer) {
 
 	Bignum result = multiplySPrimes(generateSPrimes());
-	Bignum resultPhi{ multiplyBy2a(result) };
+	Bignum resultPhi{ multiplyBy2a(result, longer) };
 
 	handleError(BN_add_word(result.get(), 1));
 
-	primalityTestAndGeneration(result, resultPhi);
+	primalityTestAndGeneration(result, resultPhi, longer);
 	return { result, resultPhi };
 }
 
-void RSA_Keys::primalityTestAndGeneration(Bignum& result, Bignum& resultPhi) {
+void RSA_Keys::primalityTestAndGeneration(Bignum& result, Bignum& resultPhi, bool longer) {
 	Bignum gcdResult;
 
 	while (true) {
+		if (BN_num_bits(result.get()) != RSA_MODULUS_BITS / 4 + (longer ? 1 : 0))
+			throw std::out_of_range("Prime is not a 512-bit number.");
+
 		switch (BN_is_prime_ex(result.get(), BN_prime_checks, ctx.get(), nullptr)) {
 		case 1:
 			handleError(BN_gcd(gcdResult.get(), resultPhi.get(), e.get(), ctx.get())); // TODO: GCD vulnerability in OpenSSL
 
 			if (BN_is_one(gcdResult.get())) {
-				std::cout << "Found a (2^" << RSA_L_BITS << "-2^" << RSA_S_BITS
-				          << ")-prime coprime with e: " << result << "\n\n";
+				if (verbose)
+					std::cout << "Found a (2^" << RSA_L_BITS << "-2^" << RSA_S_BITS
+					          << ")-prime coprime with e: " << result << "\n\n";
 
 				return;
 			}
@@ -112,7 +126,12 @@ const Bignum RSA_Keys::generatePublicModulus(const Bignum& p, const Bignum& q) {
 	Bignum n;
 	handleError(BN_mul(n.get(), p.get(), q.get(), ctx.get()));
 
-	std::cout << "Public modulus: " << n << "\n\n";
+	if (BN_num_bits(n.get()) != RSA_MODULUS_BITS / 2)
+		throw std::out_of_range("Modulus is not a 1024-bit number.");
+
+	if (verbose)
+		std::cout << "Public modulus: " << n << "\n\n";
+
 	return n;
 }
 
@@ -123,14 +142,20 @@ const Bignum RSA_Keys::generatePrivateKey(const Bignum& phiP, const Bignum& phiQ
 	Bignum d;
 	handleError(BN_mod_inverse(d.get(), e.get(), phiN.get(), ctx.get()) != nullptr);
 
-	std::cout << "Private key: " << d << "\n\n";
+	if (verbose)
+		std::cout << "Private key: " << d << "\n\n";
+
 	return d;
 }
 
 bool RSA_Keys::runTest() {
+	verbose = false;
+
 	Bignum original{ "48654681406840615136541141350146514654630436044654674266181" };
 
 	for (std::size_t i = 1; i <= TEST_COUNT; i++) {
+		std::cout << "TEST no. " << i << ": " << std::flush;
+
 		const std::pair<Bignum, Bignum> keys = generateRSAKeys();
 
 		Bignum ciphertext;
@@ -140,13 +165,14 @@ bool RSA_Keys::runTest() {
 		handleError(BN_mod_exp(plaintext.get(), ciphertext.get(), keys.second.get(), keys.first.get(), ctx.get()));
 
 		if (BN_cmp(plaintext.get(), original.get()) != 0) {
-			std::cerr << "\nTEST no" << i << ": NOK\n\n";
+			std::cerr << "NOK\n";
 			return false;
 		}
 
-		std::cout << "\nTEST no" << i << ": OK\n\n";
+		std::cout << "OK\n";
 	}
 
+	verbose = true;
 	return true;
 }
 
