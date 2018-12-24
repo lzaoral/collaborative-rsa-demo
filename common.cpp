@@ -1,6 +1,4 @@
-#include <array>
 #include <openssl/rand.h>
-#include <vector>
 
 #include <cstring> // TODO: ugly
 
@@ -20,7 +18,7 @@ const std::pair<Bignum, Bignum> RSA_Keys::generateRSAKeys() {
 	return { generatePublicModulus(p.first, q.first), generatePrivateKey(p.second, q.second) };
 }
 
-const std::vector<Bignum> RSA_Keys::generateSPrimes() const {
+std::vector<Bignum> RSA_Keys::generateSPrimes() const {
 	// TODO: random count of primes?
 	/*
     if (!RAND_bytes(&count, 1)) {
@@ -39,7 +37,7 @@ const std::vector<Bignum> RSA_Keys::generateSPrimes() const {
 		unsigned char sbitCount{}; // TODO: use more bytes?
 
 		do {
-			handleError(!RAND_bytes(&sbitCount, 1));
+			handleError(RAND_bytes(&sbitCount, 1));
 		} while (sbitCount <= RSA_S_BITS);
 
 		handleError(BN_generate_prime_ex(primes[i].get(), sbitCount, 0, nullptr, nullptr, nullptr));
@@ -53,18 +51,22 @@ Bignum RSA_Keys::multiplySPrimes(const std::vector<Bignum>& SPrimes) {
 
 	for (const Bignum& prime : SPrimes)
 		handleError(BN_mul(result.get(), prime.get(), result.get(), ctx.get()));
+
+	return result;
 }
 
 Bignum& RSA_Keys::multiplyBy2a(Bignum& result) {
-	// MULTIPLY WITH RANDOM 1 <= a <= L a and 2 and then add 1
+	const int bytesCount = RSA_L_BITS / 8;
 
-	std::array<unsigned char, RSA_L_BITS / 8> aBuffer;
-	handleError(RAND_bytes(aBuffer.data(), RSA_L_BITS / 8));
+	std::vector<unsigned char> aBuffer(bytesCount);
+	handleError(RAND_bytes(aBuffer.data(), bytesCount));
 
 	unsigned long a{}; // TODO: is ok?
-	std::memcpy(&a, aBuffer.data(), RSA_L_BITS / 8);
+	std::memcpy(&a, aBuffer.data(), bytesCount);
 
 	handleError(BN_mul_word(result.get(), a * 2));
+
+	return result;
 }
 
 const std::pair<Bignum, Bignum> RSA_Keys::generateSafePrime() {
@@ -116,10 +118,10 @@ const Bignum RSA_Keys::generatePublicModulus(const Bignum& p, const Bignum& q) {
 
 const Bignum RSA_Keys::generatePrivateKey(const Bignum& phiP, const Bignum& phiQ) {
 	Bignum phiN;
-	handleError(!BN_mul(phiN.get(), phiP.get(), phiQ.get(), ctx.get()));
+	handleError(BN_mul(phiN.get(), phiP.get(), phiQ.get(), ctx.get()));
 
 	Bignum d;
-	handleError(BN_mod_inverse(d.get(), e.get(), phiN.get(), ctx.get()) == nullptr);
+	handleError(BN_mod_inverse(d.get(), e.get(), phiN.get(), ctx.get()) != nullptr);
 
 	std::cout << "Private key: " << d << "\n\n";
 	return d;

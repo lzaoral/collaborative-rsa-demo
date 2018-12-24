@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "bignum_wrapper.hpp"
 
@@ -38,7 +39,7 @@ public:
 
 private:
 	const std::pair<Bignum, Bignum> generateSafePrime();
-	const std::vector<Bignum> generateSPrimes() const;
+	std::vector<Bignum> generateSPrimes() const;
 	Bignum multiplySPrimes(const std::vector<Bignum> &SPrimes);
 	Bignum &multiplyBy2a(Bignum &result);
 	void primalityTestAndGeneration(Bignum &result, Bignum &resultPhi);
