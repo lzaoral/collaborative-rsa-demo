@@ -1,7 +1,7 @@
 #include "common.hpp"
 
 void sendKeys(const Bignum& d, const Bignum& n) {
-	std::cout << "Storing keys...\n\n";
+	std::cout << "Storing keys... ";
 	std::ofstream out("client.key");
 
 	if (!out)
@@ -12,11 +12,12 @@ void sendKeys(const Bignum& d, const Bignum& n) {
 	out << d << '\n'
 	    << n << std::endl;
 
-	std::cout << "Storing keys OK\n\n";
+	std::cout << "OK\n\n";
 }
 
 void updateClientKeys() {
-	std::cout << "Updating keys...\n\n";
+	std::cout << "Updating keys... ";
+
 	std::ifstream cl("client.key");
 	std::ifstream pub("public.key");
 
@@ -29,19 +30,18 @@ void updateClientKeys() {
 	cl >> n1 >> n1;
 	pub >> n >> n;
 
-	cl.close();
-	pub.close();
-
 	std::ofstream out("client.key");
 	if (!out)
 		throw std::runtime_error("Could not write the given keys.");
 
-	out << n1 << n;
-	std::cout << "Client keys updated! OK\n\n";
+	out << n1 << '\n'
+	    << n << std::endl;
+
+	std::cout << "OK\n\n";
 }
 
 void signMessage() {
-	std::cout << "Signing...\n\n";
+	std::cout << "Signing...\n";
 
 	std::ifstream cl("client.key");
 	if (!cl)
@@ -67,7 +67,7 @@ void signMessage() {
 
 	// d' computed
 	Bignum signature;
-	Bignum dPrime{ D_PRIME };
+	Bignum dPrime{ RSA_Keys::D_PRIME };
 	Bignum_CTX ctx;
 
 	handleError(BN_mod_exp(signature.get(), message.get(), dPrime.get(), n1.get(), ctx.get()));
@@ -76,8 +76,32 @@ void signMessage() {
 	if (!out)
 		throw std::runtime_error("Could not write the given keys.");
 
-	out << message << signature;
+	out << message << '\n'
+	    << signature;
+
 	std::cout << "Signature computed! OK\n\n";
+}
+
+void verifySignature() {
+	std::cout << "Verifying signature...\n";
+
+	std::ifstream sig("signature.sig");
+	std::ifstream pub("public.key");
+	if (!sig || !pub)
+		throw std::runtime_error("Could not read signature.");
+
+	Bignum signature, message;
+	Bignum n;
+	Bignum_CTX ctx;
+
+	sig >> signature >> message;
+	pub >> n >> n;
+
+	Bignum tmp;
+	handleError(BN_mod_exp(tmp.get(), signature.get(), RSA_Keys::e.get(), n.get(), ctx.get()));
+	handleError(BN_cmp(message.get(), tmp.get()) == 0);
+
+	std::cout << "OK\n\n";
 }
 
 int main() {
@@ -87,6 +111,7 @@ int main() {
 	                          "2. Dispose of unneeded data\n"
 	                          "3. Test RSA implementation\n"
 	                          "4. Sign message and send to server\n"
+	                          "5. Check signature\n"
 	                          "0. Exit program\n"
 	                          "Selection:\n");
 
@@ -101,7 +126,7 @@ int main() {
 
 		switch (input) {
 		case 0: {
-			std::cout << "Exiting. ..\n";
+			std::cout << "Exiting...\n";
 			return EXIT_SUCCESS;
 		}
 
@@ -128,6 +153,8 @@ int main() {
 				std::cerr << "Part 1, or part 2 of key generation process was skipped.\n";
 				break;
 			}
+
+			std::cout << "*** PART THREE ***\n\n";
 
 			updateClientKeys();
 			break;
@@ -158,7 +185,7 @@ int main() {
 				std::cerr << "Part 1, or part 2 of key generation process was skipped.\n";
 				break;
 			}
-			
+
 			try {
 				signMessage();
 			} catch (const std::exception& e) {
@@ -169,8 +196,24 @@ int main() {
 			break;
 		}
 
+		case 5: {
+			if (!std::ifstream("signature.sig").good() || !std::ifstream("public.key").good()) {
+				std::cerr << "File with message and signature does not exist.\n";
+				break;
+			}
+
+			try {
+				verifySignature();
+			} catch (const std::exception& e) {
+				std::cerr << e.what() << '\n';
+				return EXIT_FAILURE;
+			}
+
+			break;
+		}
+
 		default:
-			std::cout << "Unknown choice\n\n";
+			std::cout << "Unknown choice.\n\n";
 		}
 	}
 }

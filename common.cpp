@@ -9,6 +9,9 @@ void handleError(int errCode) {
 		throw std::runtime_error(ERR_error_string(ERR_get_error(), nullptr));
 }
 
+const std::string RSA_Keys::D_PRIME{ "4654156489464324346546846544532696" };
+const Bignum RSA_Keys::e{ RSA_PUBLIC_KEY };
+
 const std::pair<Bignum, Bignum> RSA_Keys::generateRSAKeys() {
 	Bignum_CTX ctx;
 	while (true) {
@@ -16,7 +19,7 @@ const std::pair<Bignum, Bignum> RSA_Keys::generateRSAKeys() {
 			if (verbose)
 				std::cout << "Generating p...\n";
 
-			const std::pair<Bignum, Bignum> p = generateSafePrime(false);
+			const std::pair<Bignum, Bignum> p = generateSafePrime(!isClient);
 
 			if (verbose)
 				std::cout << "Generating q...\n";
@@ -131,7 +134,7 @@ const Bignum RSA_Keys::generatePublicModulus(const Bignum& p, const Bignum& q) {
 	Bignum n;
 	handleError(BN_mul(n.get(), p.get(), q.get(), ctx.get()));
 
-	if (BN_num_bits(n.get()) != RSA_MODULUS_BITS / 2)
+	if (BN_num_bits(n.get()) != RSA_MODULUS_BITS / 2 + (isClient ? 0 : 1))
 		throw std::out_of_range("Modulus is not a 1024-bit number.");
 
 	if (verbose)
@@ -195,7 +198,7 @@ bool regeneration(const std::string& file) {
 	std::ifstream in(file + ".key");
 
 	if (!in)
-		return false;
+		return true;
 
 	std::cout << "Do you want to regenerate " << file << ".key? (y/n)\n";
 	std::string answer;
@@ -206,8 +209,10 @@ bool regeneration(const std::string& file) {
 		if (answer == "y")
 			return true;
 
-		if (answer == "n")
+		if (answer == "n") {
+			std::cout << '\n';
 			return false;
+		}
 
 		std::cout << "Unknown choice.\n";
 	}

@@ -1,19 +1,16 @@
 #include "common.hpp"
 
 std::pair<Bignum, Bignum> getClientKeys() {
-	std::cout << "Loading client keys...\n\n";
+	std::cout << "Loading client keys... ";
 	std::ifstream in("client.key");
 
 	if (!in)
 		throw std::runtime_error("Client keys have not been generated!");
 
-	// E is hardcoded and public
-
 	Bignum d, n;
-
 	in >> d >> n;
 
-	std::cout << "Loading keys OK!\n\n";
+	std::cout << "OK\n";
 
 	return { d, n };
 }
@@ -22,6 +19,9 @@ Bignum multiplyNs(const Bignum& n1, const Bignum& n2) {
 	Bignum n;
 	Bignum_CTX ctx;
 
+	handleError(BN_num_bits(n1.get()) == 1024);
+	handleError(BN_num_bits(n2.get()) == 1025);
+
 	handleError(BN_mul(n.get(), n1.get(), n2.get(), ctx.get()));
 	handleError(BN_num_bits(n.get()) == 2048);
 
@@ -29,7 +29,7 @@ Bignum multiplyNs(const Bignum& n1, const Bignum& n2) {
 }
 
 void storeKeys(const std::pair<Bignum, Bignum>& client, const std::pair<Bignum, Bignum>& server) {
-	std::cout << "Storing keys...\n\n";
+	std::cout << "Storing keys... ";
 	std::ofstream out("server.key");
 
 	if (!out)
@@ -44,35 +44,36 @@ void storeKeys(const std::pair<Bignum, Bignum>& client, const std::pair<Bignum, 
 	if (!out)
 		throw std::runtime_error("Could not write out the given keys.");
 
-	std::cout << "Sending keys OK\n\n";
+	std::cout << "OK\n";
 }
 
-void sendKeys(const Bignum& e, const Bignum& n) {
-	std::cout << "Sending keys...\n\n";
+void sendKeys(const Bignum& n) {
+	std::cout << "Sending keys... ";
 	std::ofstream out("public.key");
 
 	if (!out)
 		throw std::runtime_error("Could not write out the given keys.");
 
-	out << e << n << std::endl;
+	out << RSA_Keys::e << '\n'
+	    << n << std::endl;
 
 	if (!out)
 		throw std::runtime_error("Could not write out the given keys.");
 
-	std::cout << "Sending keys OK\n\n";
+	std::cout << "OK\n\n";
 }
 
 void server(RSA_Keys& rsa) {
 	const std::pair<Bignum, Bignum> client = getClientKeys();
 	const std::pair<Bignum, Bignum> server = rsa.generateRSAKeys();
-	const Bignum modulus = multiplyNs(client.first, server.first);
+	const Bignum modulus = multiplyNs(client.second, server.second);
 
 	storeKeys(client, server);
-	sendKeys(rsa.e, modulus);
+	sendKeys(modulus);
 }
 
-void signMessage(const Bignum& e) {
-	std::cout << "Finishing signature...\n";
+void signMessage() {
+	std::cout << "Finishing signature... ";
 
 	std::ifstream server("server.key");
 	std::ifstream sign("client.sig");
@@ -89,15 +90,16 @@ void signMessage(const Bignum& e) {
 
 	Bignum fullClientSig;
 	handleError(BN_mod_exp(fullClientSig.get(), message.get(), d1.get(), n1.get(), ctx.get()));
-	handleError(BN_mul(fullClientSig.get(), fullClientSig.get(), clientSig.get(), ctx.get()));
+	handleError(BN_mod_mul(fullClientSig.get(), fullClientSig.get(), clientSig.get(), n1.get(), ctx.get()));
 
 	Bignum clientSigCheck;
-	handleError(BN_mod_exp(clientSigCheck.get(), fullClientSig.get(), e.get(), n1.get(), ctx.get()));
-	handleError(BN_cmp(clientSig.get(), clientSigCheck.get()) == 0);
+	handleError(BN_mod_exp(clientSigCheck.get(), fullClientSig.get(), RSA_Keys::e.get(), n1.get(), ctx.get()));
+	handleError(BN_cmp(message.get(), clientSigCheck.get()) == 0);
 
 	Bignum fullServerSig;
 	handleError(BN_mod_exp(fullServerSig.get(), message.get(), d2.get(), n2.get(), ctx.get()));
 
+	// TODO: this is wrong!!!
 	Bignum fullSignature;
 	handleError(BN_sub(fullSignature.get(), fullServerSig.get(), fullClientSig.get()));
 
@@ -112,8 +114,10 @@ void signMessage(const Bignum& e) {
 	if (!out)
 		throw std::runtime_error("Could not write out the given keys.");
 
-	out << fullSignature << message;
-	std::cout << "Signature complete! OK\n\n";
+	out << fullSignature << '\n'
+	    << message << std::endl;
+
+	std::cout << "OK\n\n";
 }
 
 int main() {
@@ -187,7 +191,7 @@ int main() {
 			}
 
 			try {
-				signMessage(rsa.e);
+				signMessage();
 			} catch (const std::exception& e) {
 				std::cerr << e.what() << '\n';
 				return EXIT_FAILURE;

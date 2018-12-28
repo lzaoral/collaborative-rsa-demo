@@ -9,15 +9,8 @@
 
 #include "bignum_wrapper.hpp"
 
-#define D_PRIME "4654156489464324346546846544532696"
-
 class RSA_Keys {
 private:
-	static const unsigned RSA_L_BITS{ 16 };
-	static const unsigned RSA_S_BITS{ 200 };
-	static const unsigned RSA_MODULUS_BITS{ 2048 };
-	static const unsigned RSA_PUBLIC_KEY{ 65537 };
-
 	static const unsigned SECURITY_BITS{ 112 };
 
 	static const unsigned S_PRIME_COUNT{ 2 };
@@ -26,13 +19,19 @@ private:
 	Bignum_CTX ctx;
 
 public:
+	static const unsigned RSA_L_BITS{ 16 };
+	static const unsigned RSA_S_BITS{ 200 };
+	static const unsigned RSA_MODULUS_BITS{ 2048 };
+	static const unsigned RSA_PUBLIC_KEY{ 65537 };
+
+	static const std::string D_PRIME;
+	static const Bignum e;
+
 	bool verbose{ true };
 	const bool isClient;
-	const Bignum e;
 
-	RSA_Keys(bool isClient, unsigned publicKey = RSA_PUBLIC_KEY)
-	    : isClient(isClient)
-	    , e(publicKey) {}
+	RSA_Keys(bool isClient)
+	    : isClient(isClient) {}
 
 	/**
     * Generates and stores keys required for encryption.
