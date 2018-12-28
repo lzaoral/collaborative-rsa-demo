@@ -2,11 +2,14 @@
 #define COMMON_HPP
 #pragma once
 
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
 
 #include "bignum_wrapper.hpp"
+
+#define D_PRIME "4654156489464324346546846544532696"
 
 class RSA_Keys {
 private:
@@ -22,13 +25,14 @@ private:
 
 	Bignum_CTX ctx;
 
-	bool verbose;
-
 public:
+	bool verbose{ true };
+	const bool isClient;
 	const Bignum e;
 
-	RSA_Keys(unsigned publicKey = RSA_PUBLIC_KEY)
-	    : e(publicKey) {}
+	RSA_Keys(bool isClient, unsigned publicKey = RSA_PUBLIC_KEY)
+	    : isClient(isClient)
+	    , e(publicKey) {}
 
 	/**
     * Generates and stores keys required for encryption.
@@ -41,7 +45,10 @@ public:
 	bool runTest();
 
 private:
+	bool isTest{ false };
+
 	const std::pair<Bignum, Bignum> generateSafePrime(bool longer);
+
 	std::vector<Bignum> generateSPrimes() const;
 	Bignum multiplySPrimes(const std::vector<Bignum> &SPrimes);
 	void applyMask(Bignum &result, bool longer);
@@ -53,5 +60,10 @@ private:
 
 	void handleError(int errCode) const;
 };
+
+/**
+ * Checks whether the given keys have been already generated.
+ */
+bool regeneration(const std::string& file);
 
 #endif // COMMON_HPP

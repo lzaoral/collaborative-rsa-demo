@@ -22,6 +22,15 @@ private:
 		return os;
 	}
 
+	friend std::istream& operator>>(std::istream& is, Bignum& bn) {
+		std::string tmp;
+
+		is >> tmp;
+		bn.set(tmp);
+
+		return is;
+	}
+
 public:
 	Bignum()
 	    : value(BN_new()) { // BN_CTX_secure_new()
@@ -69,6 +78,16 @@ public:
 
 	const BIGNUM* get() const {
 		return value;
+	}
+
+	void set(unsigned long word) {
+		if (!BN_set_word(value, word))
+			throw std::runtime_error(ERR_error_string(ERR_get_error(), nullptr));
+	}
+
+	void set(const std::string& word) {
+		if (!BN_dec2bn(&value, word.c_str()))
+			throw std::runtime_error(ERR_error_string(ERR_get_error(), nullptr));
 	}
 
 	~Bignum() {

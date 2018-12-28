@@ -21,7 +21,7 @@ const std::pair<Bignum, Bignum> RSA_Keys::generateRSAKeys() {
 			if (verbose)
 				std::cout << "(2^" << RSA_L_BITS << "-2^" << RSA_S_BITS << ")-safe primes generated!\n\n";
 
-			return { generatePublicModulus(p.first, q.first), generatePrivateKey(p.second, q.second) };
+			return { generatePrivateKey(p.second, q.second), generatePublicModulus(p.first, q.first) };
 
 		} catch (const std::out_of_range& err) {
 			std::cerr << err.what() << "\nRetrying...\n\n";
@@ -145,11 +145,20 @@ const Bignum RSA_Keys::generatePrivateKey(const Bignum& phiP, const Bignum& phiQ
 	if (verbose)
 		std::cout << "Private key: " << d << "\n\n";
 
+	if (!isTest && isClient) {
+		Bignum dPrime{ D_PRIME };
+		handleError(BN_mod_sub(d.get(), d.get(), dPrime.get(), phiN.get(), ctx.get()));
+
+		if (verbose)
+			std::cout << "Client share private key: " << d << "\n\n";
+	}
+
 	return d;
 }
 
 bool RSA_Keys::runTest() {
 	verbose = false;
+	isTest = true;
 
 	Bignum original{ "48654681406840615136541141350146514654630436044654674266181" };
 
@@ -159,10 +168,10 @@ bool RSA_Keys::runTest() {
 		const std::pair<Bignum, Bignum> keys = generateRSAKeys();
 
 		Bignum ciphertext;
-		handleError(BN_mod_exp(ciphertext.get(), original.get(), e.get(), keys.first.get(), ctx.get()));
+		handleError(BN_mod_exp(ciphertext.get(), original.get(), e.get(), keys.second.get(), ctx.get()));
 
 		Bignum plaintext;
-		handleError(BN_mod_exp(plaintext.get(), ciphertext.get(), keys.second.get(), keys.first.get(), ctx.get()));
+		handleError(BN_mod_exp(plaintext.get(), ciphertext.get(), keys.first.get(), keys.second.get(), ctx.get()));
 
 		if (BN_cmp(plaintext.get(), original.get()) != 0) {
 			std::cerr << "NOK\n";
@@ -173,10 +182,33 @@ bool RSA_Keys::runTest() {
 	}
 
 	verbose = true;
+	isTest = false;
 	return true;
 }
 
 void RSA_Keys::handleError(int errCode) const {
 	if (!errCode)
 		throw std::runtime_error(ERR_error_string(ERR_get_error(), nullptr));
+}
+
+bool regeneration(const std::string& file) {
+	std::ifstream in(file + ".key");
+
+	if (!in)
+		return false;
+
+	std::cout << "Do you want to regenerate " << file << ".key? (y/n)\n";
+	std::string answer;
+
+	while (true) {
+		std::getline(std::cin, answer);
+
+		if (answer == "y")
+			return true;
+
+		if (answer == "n")
+			return false;
+
+		std::cout << "Unknown choice.\n";
+	}
 }
