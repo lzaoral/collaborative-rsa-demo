@@ -4,6 +4,11 @@
 
 #include "common.hpp"
 
+void handleError(int errCode) {
+	if (!errCode)
+		throw std::runtime_error(ERR_error_string(ERR_get_error(), nullptr));
+}
+
 const std::pair<Bignum, Bignum> RSA_Keys::generateRSAKeys() {
 	Bignum_CTX ctx;
 	while (true) {
@@ -184,11 +189,6 @@ bool RSA_Keys::runTest() {
 	verbose = true;
 	isTest = false;
 	return true;
-}
-
-void RSA_Keys::handleError(int errCode) const {
-	if (!errCode)
-		throw std::runtime_error(ERR_error_string(ERR_get_error(), nullptr));
 }
 
 bool regeneration(const std::string& file) {

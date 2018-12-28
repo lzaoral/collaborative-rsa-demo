@@ -57,13 +57,16 @@ private:
 
 	const Bignum generatePublicModulus(const Bignum &p, const Bignum &q);
 	const Bignum generatePrivateKey(const Bignum &phiP, const Bignum &phiQ);
-
-	void handleError(int errCode) const;
 };
+
+/**
+ * Handles error codes of OpenSSL functions.
+ */
+void handleError(int errCode);
 
 /**
  * Checks whether the given keys have been already generated.
  */
-bool regeneration(const std::string& file);
+bool regeneration(const std::string &file);
 
 #endif // COMMON_HPP
