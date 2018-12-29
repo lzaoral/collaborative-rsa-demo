@@ -27,7 +27,7 @@ public:
 	static const std::string D_PRIME;
 	static const Bignum e;
 
-	bool verbose{ true };
+	bool verbose{ false };
 	const bool isClient;
 
 	RSA_Keys(bool isClient)

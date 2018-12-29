@@ -145,8 +145,10 @@ int main() {
 		}
 
 		case 1: {
-			if (!std::ifstream("client.key").good())
+			if (!std::ifstream("client.key").good()) {
 				std::cerr << "Client keys do not exist, generate then first!\n";
+				break;
+			}
 
 			if (!regeneration("server") || !regeneration("public"))
 				break;
