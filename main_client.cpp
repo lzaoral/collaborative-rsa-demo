@@ -12,7 +12,7 @@ void sendKeys(const Bignum& d, const Bignum& n) {
 	out << d << '\n'
 	    << n << std::endl;
 
-	std::cout << "OK\n\n";
+	std::cout << "\x1B[1;32mOK\x1B[0m\n\n";
 }
 
 void updateClientKeys() {
@@ -37,7 +37,7 @@ void updateClientKeys() {
 	out << n1 << '\n'
 	    << n << std::endl;
 
-	std::cout << "OK\n\n";
+	std::cout << "\x1B[1;32mOK\x1B[0m\n\n";
 }
 
 void signMessage() {
@@ -79,11 +79,11 @@ void signMessage() {
 	out << message << '\n'
 	    << signature;
 
-	std::cout << "Signature computed! OK\n\n";
+	std::cout << "Signature computed! \x1B[1;32mOK\x1B[0m\n\n";
 }
 
 void verifySignature() {
-	std::cout << "Verifying signature...\n";
+	std::cout << "Verifying signature... ";
 
 	std::ifstream sig("signature.sig");
 	std::ifstream pub("public.key");
@@ -99,13 +99,12 @@ void verifySignature() {
 
 	Bignum tmp;
 	handleError(BN_mod_exp(tmp.get(), signature.get(), RSA_Keys::e.get(), n.get(), ctx.get()));
-	handleError(BN_cmp(message.get(), tmp.get()) == 0);
 
-	std::cout << "OK\n\n";
+	std::cout << (BN_cmp(message.get(), tmp.get()) ? "\x1B[1;31mNOK\x1B[0m\n\n" : "\x1B[1;32mOK\x1B[0m\n\n");
 }
 
 int main() {
-	const std::string menuMsg("*** CLIENT ***\n\n"
+	const std::string menuMsg("\x1B[1;33m*** CLIENT ***\x1B[0m\n\n"
 	                          "Choose action:\n"
 	                          "1. Generate and send client private keys\n"
 	                          "2. Dispose of unneeded data\n"
@@ -174,7 +173,7 @@ int main() {
 				return EXIT_FAILURE;
 			}
 
-			std::cout << "TESTS OK\n\n";
+			std::cout << "\x1B[1;32mTESTS OK\x1B[0m\n\n";
 
 			break;
 		}

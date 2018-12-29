@@ -44,7 +44,7 @@ std::vector<Bignum> RSA_Keys::generateSPrimes() const {
 
 	for (size_t i = 0; i < S_PRIME_COUNT; i++) {
 		primes.emplace_back();
-		unsigned char sbitCount{}; // TODO: use more bytes?
+		unsigned char sbitCount{};
 
 		do {
 			handleError(RAND_bytes(&sbitCount, 1));
@@ -78,7 +78,7 @@ Bignum& RSA_Keys::multiplyBy2a(Bignum& result, bool longer) {
 	std::vector<unsigned char> aBuffer(bytesCount);
 	handleError(RAND_bytes(aBuffer.data(), bytesCount));
 
-	unsigned long a{}; // TODO: is ok?
+	unsigned long a{};
 	std::memcpy(&a, aBuffer.data(), bytesCount);
 
 	handleError(BN_mul_word(result.get(), a * 2));
@@ -107,7 +107,7 @@ void RSA_Keys::primalityTestAndGeneration(Bignum& result, Bignum& resultPhi, boo
 
 		switch (BN_is_prime_ex(result.get(), BN_prime_checks, ctx.get(), nullptr)) {
 		case 1:
-			handleError(BN_gcd(gcdResult.get(), resultPhi.get(), e.get(), ctx.get())); // TODO: GCD vulnerability in OpenSSL
+			handleError(BN_gcd(gcdResult.get(), resultPhi.get(), e.get(), ctx.get()));
 
 			if (BN_is_one(gcdResult.get())) {
 				if (verbose)
@@ -135,7 +135,7 @@ const Bignum RSA_Keys::generatePublicModulus(const Bignum& p, const Bignum& q) {
 	handleError(BN_mul(n.get(), p.get(), q.get(), ctx.get()));
 
 	if (BN_num_bits(n.get()) != RSA_MODULUS_BITS / 2 + (isClient ? 0 : 1))
-		throw std::out_of_range("Modulus is not a 1024-bit number.");
+		throw std::out_of_range(std::string("Modulus is not a 102") + (isClient ? "4" : "5") + "-bit number.");
 
 	if (verbose)
 		std::cout << "Public modulus: " << n << "\n\n";
@@ -182,11 +182,11 @@ bool RSA_Keys::runTest() {
 		handleError(BN_mod_exp(plaintext.get(), ciphertext.get(), keys.first.get(), keys.second.get(), ctx.get()));
 
 		if (BN_cmp(plaintext.get(), original.get()) != 0) {
-			std::cerr << "NOK\n";
+			std::cerr << "\x1B[1;31mOK\x1B[0m\n";
 			return false;
 		}
 
-		std::cout << "OK\n";
+		std::cout << "\x1B[1;32mOK\x1B[0m\n";
 	}
 
 	verbose = true;

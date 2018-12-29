@@ -10,7 +10,7 @@ std::pair<Bignum, Bignum> getClientKeys() {
 	Bignum d, n;
 	in >> d >> n;
 
-	std::cout << "OK\n";
+	std::cout << "\x1B[1;32mOK\x1B[0m\n";
 
 	return { d, n };
 }
@@ -44,7 +44,7 @@ void storeKeys(const std::pair<Bignum, Bignum>& client, const std::pair<Bignum, 
 	if (!out)
 		throw std::runtime_error("Could not write out the given keys.");
 
-	std::cout << "OK\n";
+	std::cout << "\x1B[1;32mOK\x1B[0m\n";
 }
 
 void sendKeys(const Bignum& n) {
@@ -60,7 +60,7 @@ void sendKeys(const Bignum& n) {
 	if (!out)
 		throw std::runtime_error("Could not write out the given keys.");
 
-	std::cout << "OK\n\n";
+	std::cout << "\x1B[1;32mOK\x1B[0m\n\n";
 }
 
 void server(RSA_Keys& rsa) {
@@ -99,15 +99,14 @@ void signMessage() {
 	Bignum fullServerSig;
 	handleError(BN_mod_exp(fullServerSig.get(), message.get(), d2.get(), n2.get(), ctx.get()));
 
-	// TODO: this is wrong!!!
 	Bignum fullSignature;
 	handleError(BN_sub(fullSignature.get(), fullServerSig.get(), fullClientSig.get()));
 
-	Bignum fullClientSigInverse;
-	handleError(BN_mod_inverse(fullClientSigInverse.get(), fullClientSig.get(), fullServerSig.get(), ctx.get()) != nullptr);
+	Bignum n1Inverse;
+	handleError(BN_mod_inverse(n1Inverse.get(), n1.get(), n2.get(), ctx.get()) != nullptr);
 
-	handleError(BN_mod_mul(fullSignature.get(), fullClientSig.get(), fullClientSigInverse.get(), fullServerSig.get(), ctx.get()));
-	handleError(BN_mul(fullSignature.get(), fullSignature.get(), fullClientSig.get(), ctx.get()));
+	handleError(BN_mod_mul(fullSignature.get(), fullSignature.get(), n1Inverse.get(), n2.get(), ctx.get()));
+	handleError(BN_mul(fullSignature.get(), fullSignature.get(), n1.get(), ctx.get()));
 	handleError(BN_add(fullSignature.get(), fullSignature.get(), fullClientSig.get()));
 
 	std::ofstream out("signature.sig");
@@ -117,12 +116,12 @@ void signMessage() {
 	out << fullSignature << '\n'
 	    << message << std::endl;
 
-	std::cout << "OK\n\n";
+	std::cout << "\x1B[1;32mOK\x1B[0m\n\n";
 }
 
 int main() {
 
-	const std::string menuMsg("*** SERVER ***\n\n"
+	const std::string menuMsg("\x1B[1;33m*** SERVER ***\x1B[0m\n\n"
 	                          "Choose action:\n"
 	                          "1. Get client keys and generate server keys\n"
 	                          "2. Test RSA implementation\n"
@@ -178,7 +177,7 @@ int main() {
 				return EXIT_FAILURE;
 			}
 
-			std::cout << "TESTS OK\n\n";
+			std::cout << "\x1B[1;32mTESTS OK\x1B[0m\n\n";
 
 			break;
 		}
