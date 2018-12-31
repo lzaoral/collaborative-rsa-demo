@@ -1,3 +1,5 @@
+#include <openssl/rsa.h>
+
 #include "common.hpp"
 
 void sendKeys(const Bignum& d, const Bignum& n) {
@@ -82,7 +84,7 @@ void signMessage() {
 	std::cout << "Signature computed! \x1B[1;32mOK\x1B[0m\n\n";
 }
 
-void verifySignature() {
+void verifySignatureCustom() {
 	std::cout << "Verifying signature... ";
 
 	std::ifstream sig("signature.sig");
@@ -103,6 +105,42 @@ void verifySignature() {
 	std::cout << (BN_cmp(message.get(), tmp.get()) ? "\x1B[1;31mNOK\x1B[0m\n\n" : "\x1B[1;32mOK\x1B[0m\n\n");
 }
 
+void verifySignatureOpenssl() {
+	std::cout << "DOES NOT WORK YET \n Verifying signature... ";
+
+	std::ifstream sig("signature.sig");
+	std::ifstream pub("public.key");
+	if (!sig || !pub)
+		throw std::runtime_error("Could not read signature.");
+
+	std::string signature;
+	Bignum message, n;
+	Bignum e{ RSA_Keys::e };
+
+	sig >> signature >> message;
+	pub >> n >> n;
+
+	RSA* rsa = RSA_new();
+	handleError(rsa != nullptr);
+
+	handleError(RSA_set0_key(rsa, n.get(), e.get(), nullptr));
+
+	std::vector<unsigned char> in;
+	for (char c : signature)
+		in.emplace_back(static_cast<unsigned char>(c) - '0');
+
+	std::vector<unsigned char> out(100);
+	handleError(RSA_public_decrypt(signature.length(), in.data(), out.data(), rsa, RSA_NO_PADDING) == -1);
+
+	for (auto& c : out)
+		c += '0';
+
+	Bignum tmp{ std::string(out.begin(), out.end()) };
+	std::cout << (BN_cmp(message.get(), tmp.get()) ? "\x1B[1;31mNOK\x1B[0m\n\n" : "\x1B[1;32mOK\x1B[0m\n\n");
+
+	RSA_free(rsa);
+}
+
 int main() {
 	const std::string menuMsg("\x1B[1;33m*** CLIENT ***\x1B[0m\n\n"
 	                          "Choose action:\n"
@@ -110,7 +148,8 @@ int main() {
 	                          "2. Dispose of unneeded data\n"
 	                          "3. Test RSA implementation\n"
 	                          "4. Sign message and send to server\n"
-	                          "5. Check signature\n"
+	                          "5. Check signature (custom)\n"
+	                          "6. Check signature (OpenSSL)\n\n"
 	                          "0. Exit program\n"
 	                          "Selection:\n");
 
@@ -202,7 +241,23 @@ int main() {
 			}
 
 			try {
-				verifySignature();
+				verifySignatureCustom();
+			} catch (const std::exception& e) {
+				std::cerr << e.what() << '\n';
+				return EXIT_FAILURE;
+			}
+
+			break;
+		}
+
+		case 6: {
+			if (!std::ifstream("signature.sig").good() || !std::ifstream("public.key").good()) {
+				std::cerr << "File with message and signature does not exist.\n";
+				break;
+			}
+
+			try {
+				verifySignatureOpenssl();
 			} catch (const std::exception& e) {
 				std::cerr << e.what() << '\n';
 				return EXIT_FAILURE;

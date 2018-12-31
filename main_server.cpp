@@ -19,11 +19,11 @@ Bignum multiplyNs(const Bignum& n1, const Bignum& n2) {
 	Bignum n;
 	Bignum_CTX ctx;
 
-	handleError(BN_num_bits(n1.get()) == 1024);
-	handleError(BN_num_bits(n2.get()) == 1025);
+	handleError(BN_num_bits(n1.get()) == RSA_Keys::RSA_MODULUS_BITS / 2);
+	handleError(BN_num_bits(n2.get()) == RSA_Keys::RSA_MODULUS_BITS / 2 + 1);
 
 	handleError(BN_mul(n.get(), n1.get(), n2.get(), ctx.get()));
-	handleError(BN_num_bits(n.get()) == 2048);
+	handleError(BN_num_bits(n.get()) == RSA_Keys::RSA_MODULUS_BITS);
 
 	return n;
 }
@@ -125,7 +125,7 @@ int main() {
 	                          "Choose action:\n"
 	                          "1. Get client keys and generate server keys\n"
 	                          "2. Test RSA implementation\n"
-	                          "3. Finish computation of signature\n"
+	                          "3. Finish computation of signature\n\n"
 	                          "0. Exit program\n"
 	                          "Selection:\n");
 
