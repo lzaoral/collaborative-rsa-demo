@@ -20,7 +20,7 @@ Bignum multiplyNs(const Bignum& n1, const Bignum& n2) {
 	Bignum_CTX ctx;
 
 	handleError(BN_num_bits(n1.get()) == RSA_Keys::RSA_MODULUS_BITS / 2);
-	handleError(BN_num_bits(n2.get()) == RSA_Keys::RSA_MODULUS_BITS / 2 + 1);
+	handleError(BN_num_bits(n2.get()) == RSA_Keys::RSA_MODULUS_BITS / 2);
 
 	handleError(BN_mul(n.get(), n1.get(), n2.get(), ctx.get()));
 	handleError(BN_num_bits(n.get()) == RSA_Keys::RSA_MODULUS_BITS);
@@ -88,6 +88,9 @@ void signMessage() {
 	server >> d1 >> n1 >> d2 >> n2;
 	sign >> message >> clientSig;
 
+	handleError(BN_num_bits(n1.get()) == RSA_Keys::RSA_MODULUS_BITS / 2);
+	handleError(BN_num_bits(n2.get()) == RSA_Keys::RSA_MODULUS_BITS / 2 + 1);
+
 	Bignum fullClientSig;
 	handleError(BN_mod_exp(fullClientSig.get(), message.get(), d1.get(), n1.get(), ctx.get()));
 	handleError(BN_mod_mul(fullClientSig.get(), fullClientSig.get(), clientSig.get(), n1.get(), ctx.get()));
@@ -129,7 +132,7 @@ int main() {
 	                          "0. Exit program\n"
 	                          "Selection:\n");
 
-	RSA_Keys rsa{ false };
+	RSA_Keys rsa;
 
 	while (true) {
 		std::cout << menuMsg;
@@ -140,7 +143,7 @@ int main() {
 
 		switch (input) {
 		case 0: {
-			std::cout << "Exiting. ..\n";
+			std::cout << "Exiting...\n";
 			return EXIT_SUCCESS;
 		}
 

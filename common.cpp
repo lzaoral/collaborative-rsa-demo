@@ -1,8 +1,11 @@
-#include <openssl/rand.h>
-
-#include <cstring> // TODO: ugly
-
 #include "common.hpp"
+
+#include <openssl/rand.h>
+#include <openssl/rsa.h>
+
+#include <vector>
+
+#include "rsa_wrapper.hpp"
 
 void handleError(int errCode) {
 	if (!errCode)
@@ -14,22 +17,16 @@ const Bignum RSA_Keys::e{ RSA_PUBLIC_KEY };
 
 const std::pair<Bignum, Bignum> RSA_Keys::generateRSAKeys() {
 	Bignum_CTX ctx;
+
 	while (true) {
 		try {
-			if (verbose)
-				std::cout << "Generating p...\n";
 
-			const std::pair<Bignum, Bignum> p = generateSafePrime(!isClient);
+			const Primes primes = generatePrimes();
 
 			if (verbose)
-				std::cout << "Generating q...\n";
+				std::cout << "Primes generated!\n\n";
 
-			const std::pair<Bignum, Bignum> q = generateSafePrime(true);
-
-			if (verbose)
-				std::cout << "(2^" << RSA_L_BITS << "-2^" << RSA_S_BITS << ")-safe primes generated!\n\n";
-
-			return { generatePrivateKey(p.second, q.second), generatePublicModulus(p.first, q.first) };
+			return { generatePrivateKey(primes.p.first, primes.q.first), generatePublicModulus(primes.p.second, primes.q.second) };
 
 		} catch (const std::out_of_range& err) {
 			std::cerr << err.what() << "\nRetrying...\n\n";
@@ -37,105 +34,47 @@ const std::pair<Bignum, Bignum> RSA_Keys::generateRSAKeys() {
 	}
 }
 
-std::vector<Bignum> RSA_Keys::generateSPrimes() const {
-	// handleError(RAND_bytes(&count, 1)); TODO: random count of s-primes?
+const RSA_Keys::Primes RSA_Keys::generatePrimes() {
 
-	std::vector<Bignum> primes;
+	Rsa rsa{ e };
 
-	for (size_t i = 0; i < S_PRIME_COUNT; i++) {
-		primes.emplace_back();
-		unsigned char sbitCount{};
+	auto primes = rsa.getPrimes();
 
-		do {
-			handleError(RAND_bytes(&sbitCount, 1));
-		} while (sbitCount <= RSA_S_BITS || 245 < sbitCount);
+	Bignum p{ primes.first };
+	Bignum pPhi{ p };
+	handleError(BN_sub_word(pPhi.get(), 0ul));
+	coprimalityTest(p, pPhi);
 
-		handleError(BN_generate_prime_ex(primes[i].get(), sbitCount, 0, nullptr, nullptr, nullptr));
-	}
+	Bignum q{ primes.second };
+	Bignum qPhi{ q };
+	handleError(BN_sub_word(qPhi.get(), 0ul));
+	coprimalityTest(q, qPhi);
 
-	return primes;
+	return { { pPhi, qPhi }, { p, q } };
 }
 
-Bignum RSA_Keys::multiplySPrimes(const std::vector<Bignum>& SPrimes) {
-	Bignum result{ 1 };
-
-	for (const Bignum& prime : SPrimes)
-		handleError(BN_mul(result.get(), prime.get(), result.get(), ctx.get()));
-
-	return result;
-}
-
-void RSA_Keys::applyMask(Bignum& result, bool longer) { // not the best solution
-	handleError(BN_set_bit(result.get(), RSA_MODULUS_BITS / 4 - (longer ? 0 : 1)));
-
-	if (BN_num_bits(result.get()) > 512 + (longer ? 1 : 0))
-		handleError(BN_mask_bits(result.get(), RSA_MODULUS_BITS / 4));
-}
-
-Bignum& RSA_Keys::multiplyBy2a(Bignum& result, bool longer) {
-	const int bytesCount = RSA_L_BITS / 8;
-
-	std::vector<unsigned char> aBuffer(bytesCount);
-	handleError(RAND_bytes(aBuffer.data(), bytesCount));
-
-	unsigned long a{};
-	std::memcpy(&a, aBuffer.data(), bytesCount);
-
-	handleError(BN_mul_word(result.get(), a * 2));
-
-	applyMask(result, longer);
-	return result;
-}
-
-const std::pair<Bignum, Bignum> RSA_Keys::generateSafePrime(bool longer) {
-
-	Bignum result = multiplySPrimes(generateSPrimes());
-	Bignum resultPhi{ multiplyBy2a(result, longer) };
-
-	handleError(BN_add_word(result.get(), 1));
-
-	primalityTestAndGeneration(result, resultPhi, longer);
-	return { result, resultPhi };
-}
-
-void RSA_Keys::primalityTestAndGeneration(Bignum& result, Bignum& resultPhi, bool longer) {
+void RSA_Keys::coprimalityTest(const Bignum& result, const Bignum& resultPhi) {
 	Bignum gcdResult;
 
-	while (true) {
-		if (BN_num_bits(result.get()) != RSA_MODULUS_BITS / 4 + (longer ? 1 : 0))
-			throw std::out_of_range("Prime is not a 512-bit number.");
+	if (BN_num_bits(result.get()) != RSA_MODULUS_BITS / 4)
+		throw std::out_of_range("Prime is not a " + std::to_string(RSA_MODULUS_BITS / 4)
+		    + "-bit number.\nNumber of bits: " + std::to_string(BN_num_bits(result.get())));
 
-		switch (BN_is_prime_ex(result.get(), BN_prime_checks, ctx.get(), nullptr)) {
-		case 1:
-			handleError(BN_gcd(gcdResult.get(), resultPhi.get(), e.get(), ctx.get()));
+	handleError(BN_gcd(gcdResult.get(), resultPhi.get(), e.get(), ctx.get()));
 
-			if (BN_is_one(gcdResult.get())) {
-				if (verbose)
-					std::cout << "Found a (2^" << RSA_L_BITS << "-2^" << RSA_S_BITS
-					          << ")-prime coprime with e: " << result << "\n\n";
+	if (!BN_is_one(gcdResult.get()))
+		throw std::runtime_error("The prime is not coprime with e");
 
-				return;
-			}
-
-			// no break, because we want to try other primes if no success
-
-		case 0:
-			handleError(BN_add_word(result.get(), 2));
-			handleError(BN_add_word(resultPhi.get(), 2));
-			break;
-
-		default:
-			throw std::runtime_error(ERR_error_string(ERR_get_error(), nullptr));
-		}
-	}
+	if (verbose)
+		std::cout << "Found a prime coprime with e: " << result << "\n\n";
 }
 
 const Bignum RSA_Keys::generatePublicModulus(const Bignum& p, const Bignum& q) {
 	Bignum n;
 	handleError(BN_mul(n.get(), p.get(), q.get(), ctx.get()));
 
-	if (BN_num_bits(n.get()) != RSA_MODULUS_BITS / 2 + (isClient ? 0 : 1))
-		throw std::out_of_range(std::string("Modulus is not a 102") + (isClient ? "4" : "5") + "-bit number.");
+	if (BN_num_bits(n.get()) != RSA_MODULUS_BITS / 2)
+		throw std::out_of_range("Modulus is not a " + std::to_string(RSA_MODULUS_BITS / 2) + "-bit number.");
 
 	if (verbose)
 		std::cout << "Public modulus: " << n << "\n\n";
@@ -153,7 +92,7 @@ const Bignum RSA_Keys::generatePrivateKey(const Bignum& phiP, const Bignum& phiQ
 	if (verbose)
 		std::cout << "Private key: " << d << "\n\n";
 
-	if (!isTest && isClient) {
+	if (!isTest) {
 		Bignum dPrime{ D_PRIME };
 		handleError(BN_mod_sub(d.get(), d.get(), dPrime.get(), phiN.get(), ctx.get()));
 

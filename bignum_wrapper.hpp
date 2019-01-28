@@ -59,6 +59,9 @@ public:
 			throw std::runtime_error(ERR_error_string(ERR_get_error(), nullptr));
 	}
 
+	Bignum(const BIGNUM* other)
+	    : value(BN_dup(other)) {}
+
 	Bignum& operator=(const Bignum& other) {
 		if (this == &other)
 			return *this;
