@@ -40,12 +40,12 @@ const RSA_Keys::Primes RSA_Keys::generatePrimes() {
 
 	auto primes = rsa.getPrimes();
 
-	Bignum p{ primes.first };
+	Bignum& p = primes.first;
 	Bignum pPhi{ p };
 	handleError(BN_sub_word(pPhi.get(), 0ul));
 	coprimalityTest(p, pPhi);
 
-	Bignum q{ primes.second };
+	Bignum& q = primes.second;
 	Bignum qPhi{ q };
 	handleError(BN_sub_word(qPhi.get(), 0ul));
 	coprimalityTest(q, qPhi);
