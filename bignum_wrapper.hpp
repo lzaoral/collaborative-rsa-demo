@@ -2,120 +2,77 @@
 #define BIGNUM_WRAPPER_HPP
 
 #include <openssl/bn.h>
-#include <openssl/crypto.h>
 #include <openssl/err.h>
-#include <stdexcept>
 
-class Bignum {
-private:
-	BIGNUM* value;
+#include <iostream>
 
-	friend std::ostream& operator<<(std::ostream& os, const Bignum& bn) {
-		char* const dec = BN_bn2dec(bn.get());
-		if (!dec)
-			throw std::runtime_error(ERR_error_string(ERR_get_error(), nullptr));
-
-		os << dec;
-
-		OPENSSL_free(dec);
-
-		return os;
-	}
-
-	friend std::istream& operator>>(std::istream& is, Bignum& bn) {
-		std::string tmp;
-
-		is >> tmp;
-		bn.set(tmp);
-
-		return is;
-	}
-
-public:
-	Bignum()
-	    : value(BN_new()) { // BN_CTX_secure_new()
-
-		if (!value)
-			throw std::runtime_error(ERR_error_string(ERR_get_error(), nullptr));
-	}
-
-	Bignum(unsigned long word)
-	    : Bignum() {
-
-		if (!BN_set_word(value, word))
-			throw std::runtime_error(ERR_error_string(ERR_get_error(), nullptr));
-	}
-
-	Bignum(const std::string& word)
-	    : Bignum() {
-
-		if (!BN_dec2bn(&value, word.c_str()))
-			throw std::runtime_error(ERR_error_string(ERR_get_error(), nullptr));
-	}
-
-	Bignum(const Bignum& other)
-	    : value(BN_dup(other.get())) {
-		if (!value)
-			throw std::runtime_error(ERR_error_string(ERR_get_error(), nullptr));
-	}
-
-	Bignum(const BIGNUM* other)
-	    : value(BN_dup(other)) {}
-
-	Bignum& operator=(const Bignum& other) {
-		if (this == &other)
-			return *this;
-
-		BN_free(value);
-		value = BN_dup(other.get());
-
-		if (!value)
-			throw std::runtime_error(ERR_error_string(ERR_get_error(), nullptr));
-
-		return *this;
-	}
-
-	BIGNUM* get() {
-		return value;
-	}
-
-	const BIGNUM* get() const {
-		return value;
-	}
-
-	void set(unsigned long word) {
-		if (!BN_set_word(value, word))
-			throw std::runtime_error(ERR_error_string(ERR_get_error(), nullptr));
-	}
-
-	void set(const std::string& word) {
-		if (!BN_dec2bn(&value, word.c_str()))
-			throw std::runtime_error(ERR_error_string(ERR_get_error(), nullptr));
-	}
-
-	~Bignum() {
-		BN_free(value); // BN_clear_free()
-	}
-};
+void handleError(bool errCode);
 
 class Bignum_CTX {
 private:
 	BN_CTX* const value;
 
 public:
-	Bignum_CTX()
-	    : value(BN_CTX_new()) { // BN_CTX_secure_new()
-		if (!value)
-			throw std::runtime_error(ERR_error_string(ERR_get_error(), nullptr));
-	}
+	Bignum_CTX();
+	~Bignum_CTX();
 
-	BN_CTX* get() {
-		return value;
-	}
+	BN_CTX* get();
+};
 
-	~Bignum_CTX() {
-		BN_CTX_free(value);
-	}
+class Bignum {
+private:
+	BIGNUM* value;
+
+	friend std::ostream& operator<<(std::ostream& os, const Bignum& bn);
+	friend std::istream& operator>>(std::istream& is, Bignum& bn);
+
+	friend bool operator==(const Bignum& a, const Bignum& b);
+	friend bool operator!=(const Bignum& a, const Bignum& b);
+
+	friend Bignum operator+(const Bignum& a, const Bignum& b);
+	friend Bignum operator-(const Bignum& a, const Bignum& b);
+	friend Bignum operator*(const Bignum& a, const Bignum& b);
+
+public:
+	static Bignum_CTX ctx;
+
+	Bignum();
+	Bignum(unsigned long word);
+	Bignum(const std::string& word);
+
+	Bignum(const Bignum& other);
+	Bignum(const BIGNUM* other);
+
+	~Bignum();
+
+	Bignum& operator=(Bignum other);
+	void swap(Bignum& other);
+
+	Bignum& operator+=(const Bignum& a);
+	Bignum& operator+=(unsigned long a);
+	Bignum& operator-=(const Bignum& a);
+	Bignum& operator-=(unsigned long a);
+
+	Bignum& operator--();
+	Bignum& operator++();
+	Bignum operator--(int);
+	Bignum operator++(int);
+
+	static Bignum inverse(const Bignum& num, const Bignum& mod);
+	static Bignum gcd(const Bignum& a, const Bignum& b);
+	static Bignum mod_sub(const Bignum& a, const Bignum& b, const Bignum& mod);
+	static Bignum mod_exp(const Bignum& a, const Bignum& b, const Bignum& mod);
+
+	BIGNUM* get();
+	const BIGNUM* get() const;
+
+	void set(unsigned long word);
+	void set(const std::string& word);
+
+	// TODO: Bn_rand
+	void set_random_value(int bits);
+	bool check_num_bits(int length) const;
+	bool is_one() const;
 };
 
 #endif // BIGNUM_WRAPPER_HPP
