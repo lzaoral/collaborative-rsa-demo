@@ -20,7 +20,7 @@ public:
 	}
 
 	std::pair<Bignum, Bignum> getPrimes() const {
-		std::vector<const BIGNUM*> primes(RSA_get_multi_prime_extra_count(value));
+		std::vector<const BIGNUM*> primes(RSA_get_multi_prime_extra_count(value) + 2);
 		handleError(RSA_get0_multi_prime_factors(value, primes.data()));
 
 		return { primes[0], primes[1] };

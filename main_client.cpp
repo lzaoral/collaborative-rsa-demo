@@ -1,118 +1,68 @@
-#include <openssl/rsa.h>
-
+#include "client_common.hpp"
 #include "common.hpp"
 
-void sendKeys(const Bignum& d, const Bignum& n) {
-	std::cout << "Storing keys... ";
-	std::ofstream out("client.key");
+#include <fstream>
 
-	if (!out)
-		throw std::runtime_error("Could not write out the given keys.");
+void sign_message() {
+	std::cout << "Signing... ";
 
-	// E is hardcoded and public
+	std::ifstream client("client_card.key");
+	if (!client)
+		throw std::runtime_error("Client keys have not been generated!");
 
-	out << d << '\n'
-	    << n << std::endl;
+	Bignum d_client, n;
+	client >> d_client >> n;
 
-	std::cout << "\x1B[1;32mOK\x1B[0m\n\n";
-}
-
-void updateClientKeys() {
-	std::cout << "Updating keys... ";
-
-	std::ifstream cl("client.key");
-	std::ifstream pub("public.key");
-
-	if (!cl || !pub)
-		throw std::runtime_error("Could not read the given keys.");
-
-	std::string n1;
-	std::string n;
-
-	cl >> n1 >> n1;
-	pub >> n >> n;
-
-	std::ofstream out("client.key");
-	if (!out)
-		throw std::runtime_error("Could not write the given keys.");
-
-	out << n1 << '\n'
-	    << n << std::endl;
-
-	std::cout << "\x1B[1;32mOK\x1B[0m\n\n";
-}
-
-void signMessage() {
-	std::cout << "Signing...\n";
-
-	std::ifstream cl("client.key");
-	if (!cl)
-		throw std::runtime_error("Could not write the given keys.");
-
-	Bignum n1;
-	cl >> n1;
+	if (!client)
+		throw std::runtime_error("Could not read the client keys!");
 
 	Bignum message;
 
-	while (true) {
-		std::cout << "Message to be signed (use only decimal numbers):\n";
-
-		try {
-			std::cin >> message;
-			break;
-
-		} catch (const std::runtime_error& ex) {
-			std::cerr << "Invalid message!\n";
-			continue;
-		}
-	}
+	// refactor message from file
+	// TODO: HERE
 
 	// d' computed
-	Bignum signature;
-	Bignum dPrime{ RSA_Keys::D_PRIME };
-	Bignum_CTX ctx;
-
-	handleError(BN_mod_exp(signature.get(), message.get(), dPrime.get(), n1.get(), ctx.get()));
+	Bignum signature = Bignum::mod_exp(message, d_client, n);
 
 	std::ofstream out("client.sig");
 	if (!out)
-		throw std::runtime_error("Could not write the given keys.");
+		throw std::runtime_error("Could not save the signature!");
 
 	out << message << '\n'
 	    << signature;
 
-	std::cout << "Signature computed! \x1B[1;32mOK\x1B[0m\n\n";
+	if (!out)
+		throw std::runtime_error("Could not save the signature!");
+
+	std::cout << "\x1B[1;32mOK\x1B[0m\n";
 }
 
-void verifySignatureCustom() {
+void verify_signature() {
 	std::cout << "Verifying signature... ";
 
-	std::ifstream sig("signature.sig");
-	std::ifstream pub("public.key");
-	if (!sig || !pub)
-		throw std::runtime_error("Could not read signature.");
+	std::ifstream signature_file("signature.sig"), public_key("public.key");
+	if (!signature_file || !public_key)
+		throw std::runtime_error("Could not read signature or public keys.");
 
-	Bignum signature, message;
-	Bignum n;
-	Bignum_CTX ctx;
+	Bignum msg, sig, n;
+	signature_file >> msg >> sig;
+	
+	// TODO: WTF?
+	public_key >> n >> n;
 
-	sig >> signature >> message;
-	pub >> n >> n;
+	if (!signature_file || !public_key)
+		throw std::runtime_error("Could not read signature or public keys.");
 
-	Bignum tmp;
-	handleError(BN_mod_exp(tmp.get(), signature.get(), RSA_Keys::e.get(), n.get(), ctx.get()));
-
-	std::cout << (BN_cmp(message.get(), tmp.get()) ? "\x1B[1;31mNOK\x1B[0m\n\n" : "\x1B[1;32mOK\x1B[0m\n\n");
+	std::cout << (Bignum::mod_exp(sig, RSA_Keys::e, n) == msg ? "\x1B[1;31mNOK\x1B[0m\n\n" : "\x1B[1;32mOK\x1B[0m\n\n");
 }
 
 int main() {
-	const std::string menuMsg("\x1B[1;33m*** CLIENT ***\x1B[0m\n\n"
+	const std::string menuMsg("\x1B[1;33m*** SMPC RSA CLIENT DEMO ***\x1B[0m\n\n"
 	                          "Choose action:\n"
 	                          "1. Generate and send client private keys\n"
-	                          "2. Dispose of unneeded data\n"
-	                          "3. Test RSA implementation\n"
-	                          "4. Sign message and send to server\n"
-	                          "5. Check signature (custom)\n"
+	                          "2. Sign message and send to server\n"
+	                          "3. Check signature (custom)\n"
+	                          "4. Test RSA implementation\n"
 	                          "0. Exit program\n"
 	                          "Selection:\n");
 
@@ -132,14 +82,13 @@ int main() {
 		}
 
 		case 1: {
-			if (!regeneration("client"))
+			// TODO:
+			if (std::ifstream("client_card.key") && std::ifstream("for_server.key") && !regeneration())
 				break;
 
-			std::cout << "*** PART ONE ***\n\nGenerating keys...\n\n";
-
 			try {
-				const std::pair<Bignum, Bignum> pair = rsa.generateRSAKeys();
-				sendKeys(pair.first, pair.second);
+				rsa.generate_RSA_keys();
+				save_keys(rsa.get_d_client(), rsa.get_d_server(), rsa.get_n());
 			} catch (const std::exception& e) {
 				std::cerr << e.what() << '\n';
 				return EXIT_FAILURE;
@@ -149,69 +98,53 @@ int main() {
 		}
 
 		case 2: {
-			if (!std::ifstream("client.key").good() || !std::ifstream("server.key").good()
-			    || !std::ifstream("public.key").good()) {
-				std::cerr << "Part 1, or part 2 of key generation process was skipped.\n";
+			// TODO:
+			if (!std::ifstream("client_card.key").good())
 				break;
-			}
-
-			std::cout << "*** PART THREE ***\n\n";
-
-			updateClientKeys();
-			break;
-		}
-
-		case 3: {
-			std::cout << "Running tests...\n\n";
 
 			try {
-				if (!rsa.runTest()) {
-					std::cerr << "Tests failed!\n";
-
-					return EXIT_FAILURE;
-				}
+				sign_message();
 			} catch (const std::exception& e) {
 				std::cerr << e.what() << '\n';
 				return EXIT_FAILURE;
 			}
 
-			std::cout << "\x1B[1;32mTESTS OK\x1B[0m\n\n";
+			break;
+		}
+
+		case 3: {
+			// TODO:
+			if (!std::ifstream("signature.sig").good() || !std::ifstream("public.key").good()) {
+				std::cerr << "File with message or signature does not exist.\n";
+				break;
+			}
+
+			try {
+				verify_signature();
+			} catch (const std::exception& e) {
+				std::cerr << e.what() << '\n';
+				return EXIT_FAILURE;
+			}
 
 			break;
 		}
 
 		case 4: {
-			if (!std::ifstream("client.key").good() || !std::ifstream("server.key").good()
-			    || !std::ifstream("public.key").good()) {
-				std::cerr << "Part 1, or part 2 of key generation process was skipped.\n";
-				break;
-			}
-
 			try {
-				signMessage();
+				std::cout << "Testing...\n";
+				bool ret = rsa.run_test();
+
+				std::cout << "Result: " << (ret ? "\x1B[1;32mOK\x1B[0m\n" : "\x1B[1;31mNOK\x1B[0m\n")
+						<< std::endl;
+
+				return ret;
 			} catch (const std::exception& e) {
 				std::cerr << e.what() << '\n';
 				return EXIT_FAILURE;
 			}
 
-			break;
-		}
-
-		case 5: {
-			if (!std::ifstream("signature.sig").good() || !std::ifstream("public.key").good()) {
-				std::cerr << "File with message and signature does not exist.\n";
 				break;
 			}
-
-			try {
-				verifySignatureCustom();
-			} catch (const std::exception& e) {
-				std::cerr << e.what() << '\n';
-				return EXIT_FAILURE;
-			}
-
-			break;
-		}
 
 		default:
 			std::cout << "Unknown choice.\n\n";

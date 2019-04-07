@@ -1,30 +1,33 @@
+#include "client_common.hpp"
 #include "common.hpp"
 
-#include <fstream>
+int main(int argc, char* argv[]) {
+	if (argc > 2 || (argc == 2 && std::string(argv[1]) != "test")) {
+		std::cerr << "Unknown parameters.\n"
+		          << "USAGE: " << argv[0] << "[test]\n";
 
-void save_keys(const Bignum& d_client, const Bignum& d_server, const Bignum& n) {
-	std::cout << "Storing keys... ";
-	std::ofstream client("client_card.key"), server("for_server.key");
+		return EXIT_FAILURE;
+	}
 
-	if (!client || !server)
-		throw std::runtime_error("Could not save keys.");
-
-	// E is hardcoded and public
-
-	client << d_client << '\n'
-	       << n << std::endl;
-
-	server << d_server << '\n'
-	       << n << std::endl;
-
-	std::cout << "\x1B[1;32mOK\x1B[0m\n";
-}
-
-int main() {
 	RSA_Keys rsa;
 	std::cout << "\x1B[1;33m*** SMPC RSA CLIENT KEY GENERATOR ***\x1B[0m\n";
 
-	if (std::ifstream("client_card.key").good() && std::ifstream("for_server.key").good() && !regeneration())
+	if (argc == 2) {
+		try {
+			std::cout << "Testing...\n";
+			bool ret = rsa.run_test();
+
+			std::cout << "Result: " << (ret ? "\x1B[1;32mOK\x1B[0m\n" : "\x1B[1;31mNOK\x1B[0m\n")
+			          << std::endl;
+
+			return ret;
+		} catch (const std::exception& e) {
+			std::cerr << e.what() << '\n';
+			return EXIT_FAILURE;
+		}
+	}
+
+	if (std::ifstream("client_card.key") && std::ifstream("for_server.key") && !regeneration())
 		return EXIT_FAILURE;
 
 	try {

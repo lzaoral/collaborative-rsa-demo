@@ -1,134 +1,121 @@
 #include "common.hpp"
 
-std::pair<Bignum, Bignum> getClientKeys() {
+#include <fstream>
+
+std::pair<Bignum, Bignum> get_client_keys() {
 	std::cout << "Loading client keys... ";
-	std::ifstream in("client.key");
+	std::ifstream in("for_server.key");
 
 	if (!in)
 		throw std::runtime_error("Client keys have not been generated!");
 
-	Bignum d, n;
-	in >> d >> n;
+	Bignum d_client, n1;
+	in >> d_client >> n1;
+
+	if (!in)
+		throw std::runtime_error("Could not read the client keys!");
 
 	std::cout << "\x1B[1;32mOK\x1B[0m\n";
 
-	return { d, n };
+	return { d_client, n1 };
 }
 
-Bignum multiplyNs(const Bignum& n1, const Bignum& n2) {
-	Bignum n;
-	Bignum_CTX ctx;
+Bignum multiply_and_check_moduli(const Bignum& n1, const Bignum& n2) {
+	unsigned long bits = RSA_Keys::RSA_MODULUS_BITS / 2;
+	check_num_bits(n1, bits);
+	check_num_bits(n2, bits);
 
-	handleError(BN_num_bits(n1.get()) == RSA_Keys::RSA_MODULUS_BITS / 2);
-	handleError(BN_num_bits(n2.get()) == RSA_Keys::RSA_MODULUS_BITS / 2);
-
-	handleError(BN_mul(n.get(), n1.get(), n2.get(), ctx.get()));
-	handleError(BN_num_bits(n.get()) == RSA_Keys::RSA_MODULUS_BITS);
+	Bignum n = n1 * n2;
+	check_num_bits(n, RSA_Keys::RSA_MODULUS_BITS);
 
 	return n;
 }
 
-void storeKeys(const std::pair<Bignum, Bignum>& client, const std::pair<Bignum, Bignum>& server) {
+void store_keys(const Bignum& d_client, const Bignum& n_client, const Bignum& d_server,
+    const Bignum& n_server, const Bignum& n) {
+
 	std::cout << "Storing keys... ";
-	std::ofstream out("server.key");
+	std::ofstream server("server.key"), public_key("public.key");
 
-	if (!out)
-		throw std::runtime_error("Could not write out the given keys.");
+	if (!server || !public_key)
+		throw std::runtime_error("Could not save the keys!");
 
-	out << client.first << '\n'
-	    << client.second << '\n'
-	    << server.first << '\n'
-	    << server.second << '\n'
-	    << std::endl;
+	server << d_client << '\n'
+	       << n_client << '\n'
+	       << d_server << '\n'
+	       << n_server;
 
-	if (!out)
-		throw std::runtime_error("Could not write out the given keys.");
+	public_key << RSA_Keys::e << '\n'
+	           << n;
+
+	if (!server || !public_key)
+		throw std::runtime_error("Could not save the keys!");
 
 	std::cout << "\x1B[1;32mOK\x1B[0m\n";
 }
 
-void sendKeys(const Bignum& n) {
-	std::cout << "Sending keys... ";
-	std::ofstream out("public.key");
-
-	if (!out)
-		throw std::runtime_error("Could not write out the given keys.");
-
-	out << RSA_Keys::e << '\n'
-	    << n << std::endl;
-
-	if (!out)
-		throw std::runtime_error("Could not write out the given keys.");
-
-	std::cout << "\x1B[1;32mOK\x1B[0m\n\n";
-}
-
 void server(RSA_Keys& rsa) {
-	const std::pair<Bignum, Bignum> client = getClientKeys();
-	const std::pair<Bignum, Bignum> server = rsa.generateRSAKeys();
-	const Bignum modulus = multiplyNs(client.second, server.second);
+	const std::pair<Bignum, Bignum> client = get_client_keys();
+	rsa.generate_RSA_keys();
 
-	storeKeys(client, server);
-	sendKeys(modulus);
+	const Bignum n = multiply_and_check_moduli(client.second, rsa.get_n());
+
+	// TODO: d naming scheme
+	store_keys(client.first, client.second, rsa.get_d_client(), rsa.get_n(), n);
 }
 
 void signMessage() {
-	std::cout << "Finishing signature... ";
+	std::cout << "Signing... ";
 
-	std::ifstream server("server.key");
-	std::ifstream sign("client.sig");
+	std::ifstream server("server.key"), sign("client.sig");
 
 	if (!server || !sign)
-		throw std::runtime_error("Could not write out the given keys.");
+		throw std::runtime_error("Could read the given keys or client signature.");
 
-	Bignum d1, n1, d2, n2;
+	Bignum d_client, n_client, d_server, n_server;
 	Bignum message, clientSig;
-	Bignum_CTX ctx;
 
-	server >> d1 >> n1 >> d2 >> n2;
+	server >> d_client >> n_client >> d_server >> n_server;
 	sign >> message >> clientSig;
 
-	handleError(BN_num_bits(n1.get()) == RSA_Keys::RSA_MODULUS_BITS / 2);
-	handleError(BN_num_bits(n2.get()) == RSA_Keys::RSA_MODULUS_BITS / 2 + 1);
+	if (!server || !sign)
+		throw std::runtime_error("Could read the given keys or client signature.");
 
-	Bignum fullClientSig;
-	handleError(BN_mod_exp(fullClientSig.get(), message.get(), d1.get(), n1.get(), ctx.get()));
-	handleError(BN_mod_mul(fullClientSig.get(), fullClientSig.get(), clientSig.get(), n1.get(), ctx.get()));
+	unsigned long bits = RSA_Keys::RSA_MODULUS_BITS / 2;
+	check_num_bits(n_client, bits);
+	check_num_bits(n_server, bits);
 
-	Bignum clientSigCheck;
-	handleError(BN_mod_exp(clientSigCheck.get(), fullClientSig.get(), RSA_Keys::e.get(), n1.get(), ctx.get()));
-	handleError(BN_cmp(message.get(), clientSigCheck.get()) == 0);
+	Bignum full_client_sig = Bignum::mod_exp(message, d_client, n_client);
+	full_client_sig.mod_mul_self(clientSig, n_client);
 
-	Bignum fullServerSig;
-	handleError(BN_mod_exp(fullServerSig.get(), message.get(), d2.get(), n2.get(), ctx.get()));
+	Bignum client_sig_check = Bignum::mod_exp(full_client_sig, RSA_Keys::e, n_client);
+	if (message != client_sig_check)
+		throw std::runtime_error("Fraudulent or corrupt client signature detected!");
 
-	Bignum fullSignature;
-	handleError(BN_sub(fullSignature.get(), fullServerSig.get(), fullClientSig.get()));
-
-	Bignum n1Inverse;
-	handleError(BN_mod_inverse(n1Inverse.get(), n1.get(), n2.get(), ctx.get()) != nullptr);
-
-	handleError(BN_mod_mul(fullSignature.get(), fullSignature.get(), n1Inverse.get(), n2.get(), ctx.get()));
-	handleError(BN_mul(fullSignature.get(), fullSignature.get(), n1.get(), ctx.get()));
-	handleError(BN_add(fullSignature.get(), fullSignature.get(), fullClientSig.get()));
+	Bignum full_signature = Bignum::mod_exp(message, d_server, n_server) - full_client_sig;
+	full_signature.mod_mul_self(Bignum::inverse(n_client, n_server), n_server);
+	full_signature *= n_client;
+	full_signature += full_client_sig;
 
 	std::ofstream out("signature.sig");
 	if (!out)
-		throw std::runtime_error("Could not write out the given keys.");
+		throw std::runtime_error("Could not write out the final signature.");
 
-	out << fullSignature << '\n'
-	    << message << std::endl;
+	out << message << '\n'
+	    << full_signature;
+
+	if (!out)
+		throw std::runtime_error("Could not write out the final signature.");
 
 	std::cout << "\x1B[1;32mOK\x1B[0m\n\n";
 }
 
 int main() {
-
 	const std::string menuMsg("\x1B[1;33m*** SERVER ***\x1B[0m\n\n"
 	                          "Choose action:\n"
 	                          "1. Get client keys and generate server keys\n"
-	                          "2. Test RSA implementation\n"
-	                          "3. Finish computation of signature\n\n"
+	                          "2. Finish computation of signature\n\n"
+	                          "3. Test RSA implementation\n"
 	                          "0. Exit program\n"
 	                          "Selection:\n");
 
@@ -148,15 +135,16 @@ int main() {
 		}
 
 		case 1: {
-			if (!std::ifstream("client.key").good()) {
+			// TODO:
+			if (!std::ifstream("for_server.key")) {
 				std::cerr << "Client keys do not exist, generate then first!\n";
 				break;
 			}
 
-			if (!regeneration("server") || !regeneration("public"))
+			if (std::ifstream("server.key") && std::ifstream("public.key") && !regeneration())
 				break;
 
-			std::cout << "*** PART TWO ***\n\nGenerating keys...\n\n";
+			std::cout << "*** PART TWO ***\n\n";
 
 			try {
 				server(rsa);
@@ -169,10 +157,27 @@ int main() {
 		}
 
 		case 2: {
+			// TODO:
+			if (!std::ifstream("server.key") || !std::ifstream("client.sig")) {
+				std::cerr << "Server keys have not been generated yet, or client side signature is missing!\n";
+				break;
+			}
+
+			try {
+				signMessage();
+			} catch (const std::exception& e) {
+				std::cerr << e.what() << '\n';
+				return EXIT_FAILURE;
+			}
+
+			break;
+		}
+
+		case 3: {
 			std::cout << "Running tests...\n\n";
 
 			try {
-				if (!rsa.runTest()) {
+				if (!rsa.run_test()) {
 					std::cerr << "Tests failed!\n";
 
 					return EXIT_FAILURE;
@@ -183,23 +188,6 @@ int main() {
 			}
 
 			std::cout << "\x1B[1;32mTESTS OK\x1B[0m\n\n";
-
-			break;
-		}
-
-		case 3: {
-			if (!std::ifstream("client.key").good() || !std::ifstream("server.key").good()
-			    || !std::ifstream("public.key").good() || !std::ifstream("client.sig")) {
-				std::cerr << "Part 1, or part 2 of key generation process was skipped.\n";
-				break;
-			}
-
-			try {
-				signMessage();
-			} catch (const std::exception& e) {
-				std::cerr << e.what() << '\n';
-				return EXIT_FAILURE;
-			}
 
 			break;
 		}

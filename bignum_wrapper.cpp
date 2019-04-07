@@ -21,7 +21,7 @@ Bignum_CTX::~Bignum_CTX() {
 }
 
 std::ostream& operator<<(std::ostream& os, const Bignum& bn) {
-	char* const dec = BN_bn2dec(bn.get());
+	char* const dec = BN_bn2hex(bn.get());
 	handleError(dec);
 
 	os << std::string(dec);
@@ -151,12 +151,16 @@ Bignum Bignum::mod_exp(const Bignum& a, const Bignum& b, const Bignum& mod) {
 	return res;
 }
 
+void Bignum::mod_mul_self(const Bignum& a, const Bignum& mod) {
+	handleError(BN_mod_mul(value, value, a.get(), mod.get(), ctx.get()));
+}
+
 void Bignum::set(unsigned long word) {
 	handleError(BN_set_word(value, word));
 }
 
-void Bignum::set(const std::string& word) {
-	handleError(BN_dec2bn(&value, word.c_str()));
+void Bignum::set(const std::string& hexWord) {
+	handleError(BN_hex2bn(&value, hexWord.c_str()));
 }
 
 Bignum::~Bignum() {
@@ -180,6 +184,16 @@ Bignum& Bignum::operator-=(const Bignum& a) {
 
 Bignum& Bignum::operator-=(unsigned long a) {
 	handleError(BN_sub_word(value, a));
+	return *this;
+}
+
+Bignum& Bignum::operator*=(const Bignum& a) {
+	handleError(BN_mul(value, value, a.get(), ctx.get()));
+	return *this;
+}
+
+Bignum& Bignum::operator*=(unsigned long a) {
+	handleError(BN_mul_word(value, a));
 	return *this;
 }
 

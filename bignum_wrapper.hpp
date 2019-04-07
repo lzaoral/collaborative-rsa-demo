@@ -52,6 +52,8 @@ public:
 	Bignum& operator+=(unsigned long a);
 	Bignum& operator-=(const Bignum& a);
 	Bignum& operator-=(unsigned long a);
+	Bignum& operator*=(const Bignum& a);
+	Bignum& operator*=(unsigned long a);
 
 	Bignum& operator--();
 	Bignum& operator++();
@@ -62,6 +64,7 @@ public:
 	static Bignum gcd(const Bignum& a, const Bignum& b);
 	static Bignum mod_sub(const Bignum& a, const Bignum& b, const Bignum& mod);
 	static Bignum mod_exp(const Bignum& a, const Bignum& b, const Bignum& mod);
+	void mod_mul_self(const Bignum& a, const Bignum& mod);
 
 	BIGNUM* get();
 	const BIGNUM* get() const;

@@ -3,7 +3,8 @@
 const Bignum RSA_Keys::e{ RSA_PUBLIC_KEY };
 
 void RSA_Keys::generate_RSA_keys() {
-	std::cout << "Generating keys... ";
+	if (!is_test)
+		std::cout << "Generating keys... ";
 
 	Rsa rsa{ e, RSA_MODULUS_BITS };
 
@@ -28,10 +29,11 @@ void RSA_Keys::generate_RSA_keys() {
 	generate_private_key(p_phi, q_phi);
 	generate_public_modulus(p, q);
 
-	std::cout << "\x1B[1;32mOK\x1B[0m\n";
+	if (!is_test)
+		std::cout << "\x1B[1;32mOK\x1B[0m\n";
 }
 
-void RSA_Keys::check_num_bits(const Bignum& num, unsigned long bits) const {
+void check_num_bits(const Bignum& num, unsigned long bits) {
 	if (!num.check_num_bits(bits))
 		throw std::out_of_range("Number generated is not a " + std::to_string(bits) + "-bit number.");
 }
@@ -87,6 +89,10 @@ const Bignum& RSA_Keys::get_d_server() const {
 
 const Bignum& RSA_Keys::get_n() const {
 	return n;
+}
+
+void RSA_Keys::set_d_client(const Bignum& num) {
+	d_client = num;
 }
 
 bool RSA_Keys::run_test() {
