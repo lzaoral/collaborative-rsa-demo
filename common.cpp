@@ -71,6 +71,11 @@ void RSA_Keys::generate_private_key(const Bignum& phi_p, const Bignum& phi_q) {
 		return;
 	}
 
+	if (is_server) {
+		d_server = d;
+		return;
+	}
+
 	d_client.set_random_value(RSA_MODULUS_BITS / 2);
 	d_server = Bignum::mod_sub(d.get(), d_client, phi_n);
 
@@ -95,8 +100,10 @@ void RSA_Keys::set_d_client(const Bignum& num) {
 	d_client = num;
 }
 
-bool RSA_Keys::run_test() {
+void RSA_Keys::run_test() {
 	is_test = true;
+	std::cout << "Testing...\n";
+	bool failed{ false };
 
 	Bignum original{ "48654681406840615136541141350146514654630436044654674266181" };
 
@@ -109,15 +116,16 @@ bool RSA_Keys::run_test() {
 		Bignum plaintext = Bignum::mod_exp(ciphertext, d_client, n);
 
 		if (plaintext != original) {
+			failed = true;
 			std::cerr << "\x1B[1;31mNOK\x1B[0m\n";
-			return false;
+			continue;
 		}
 
 		std::cout << "\x1B[1;32mOK\x1B[0m\n";
 	}
 
+	std::cout << "Result: " << (failed ? "\x1B[1;31mNOK\x1B[0m\n" : "\x1B[1;32mOK\x1B[0m\n");
 	is_test = false;
-	return true;
 }
 
 bool regeneration() {

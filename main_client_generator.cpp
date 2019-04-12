@@ -14,13 +14,8 @@ int main(int argc, char* argv[]) {
 
 	if (argc == 2) {
 		try {
-			std::cout << "Testing...\n";
-			bool ret = rsa.run_test();
-
-			std::cout << "Result: " << (ret ? "\x1B[1;32mOK\x1B[0m\n" : "\x1B[1;31mNOK\x1B[0m\n")
-			          << std::endl;
-
-			return ret;
+			rsa.run_test();
+			return EXIT_SUCCESS;
 		} catch (const std::exception& e) {
 			std::cerr << e.what() << '\n';
 			return EXIT_FAILURE;
@@ -28,7 +23,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (std::ifstream("client_card.key") && std::ifstream("for_server.key") && !regeneration())
-		return EXIT_FAILURE;
+		return EXIT_SUCCESS;
 
 	try {
 		rsa.generate_RSA_keys();

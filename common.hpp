@@ -15,6 +15,10 @@ public:
 	static const unsigned RSA_MODULUS_BITS{ 4096 };
 	static const Bignum e;
 
+	RSA_Keys() = default;
+	RSA_Keys(bool server) 
+		: is_server(server) {}
+
 	/**
     * Generates required for encryption.
     */
@@ -29,13 +33,14 @@ public:
 	/**
     * Runs self-test
     */
-	bool run_test();
+	void run_test();
 
 private:
 	Bignum d_client;
 	Bignum d_server;
 	Bignum n;
 
+	bool is_server{ false };
 	bool is_test{ false };
 
 	void e_coprimality_test(const Bignum& num);

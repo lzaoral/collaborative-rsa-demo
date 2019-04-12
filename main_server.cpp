@@ -55,16 +55,13 @@ void store_keys(const Bignum& d_client, const Bignum& n_client, const Bignum& d_
 }
 
 void server(RSA_Keys& rsa) {
-	const std::pair<Bignum, Bignum> client = get_client_keys();
+	const auto client = get_client_keys();
 	rsa.generate_RSA_keys();
 
-	const Bignum n = multiply_and_check_moduli(client.second, rsa.get_n());
-
-	// TODO: d naming scheme
-	store_keys(client.first, client.second, rsa.get_d_client(), rsa.get_n(), n);
+	store_keys(client.first, client.second, rsa.get_d_server(), rsa.get_n(), multiply_and_check_moduli(client.second, rsa.get_n()));
 }
 
-void signMessage() {
+void sign_message() {
 	std::cout << "Signing... ";
 
 	std::ifstream server("server.key"), sign("client.sig");
@@ -111,28 +108,26 @@ void signMessage() {
 }
 
 int main() {
-	const std::string menuMsg("\x1B[1;33m*** SERVER ***\x1B[0m\n\n"
+	const std::string menu_msg("\x1B[1;33m*** SMPC RSA SERVER DEMO ***\x1B[0m\n"
 	                          "Choose action:\n"
 	                          "1. Get client keys and generate server keys\n"
-	                          "2. Finish computation of signature\n\n"
+	                          "2. Finish computation of signature\n"
 	                          "3. Test RSA implementation\n"
 	                          "0. Exit program\n"
 	                          "Selection:\n");
 
-	RSA_Keys rsa;
+	RSA_Keys rsa{ true };
 
 	while (true) {
-		std::cout << menuMsg;
+		std::cout << menu_msg;
 
 		unsigned input{};
 		std::cin >> input;
 		std::cin.ignore();
 
 		switch (input) {
-		case 0: {
-			std::cout << "Exiting...\n";
+		case 0:
 			return EXIT_SUCCESS;
-		}
 
 		case 1: {
 			// TODO:
@@ -143,8 +138,6 @@ int main() {
 
 			if (std::ifstream("server.key") && std::ifstream("public.key") && !regeneration())
 				break;
-
-			std::cout << "*** PART TWO ***\n\n";
 
 			try {
 				server(rsa);
@@ -164,7 +157,7 @@ int main() {
 			}
 
 			try {
-				signMessage();
+				sign_message();
 			} catch (const std::exception& e) {
 				std::cerr << e.what() << '\n';
 				return EXIT_FAILURE;
@@ -173,24 +166,14 @@ int main() {
 			break;
 		}
 
-		case 3: {
-			std::cout << "Running tests...\n\n";
-
+		case 3:
 			try {
-				if (!rsa.run_test()) {
-					std::cerr << "Tests failed!\n";
-
-					return EXIT_FAILURE;
-				}
+				rsa.run_test();
+				break;
 			} catch (const std::exception& e) {
 				std::cerr << e.what() << '\n';
 				return EXIT_FAILURE;
 			}
-
-			std::cout << "\x1B[1;32mTESTS OK\x1B[0m\n\n";
-
-			break;
-		}
 
 		default:
 			std::cout << "Unknown choice\n\n";
