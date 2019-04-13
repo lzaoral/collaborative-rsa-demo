@@ -8,8 +8,9 @@ void handleError(bool errCode) {
 }
 
 Bignum_CTX::Bignum_CTX()
-    : value(BN_CTX_new()) { // BN_CTX_secure_new()
-	handleError(value);
+    : value(BN_CTX_secure_new()) {
+	if (!value)
+		throw std::runtime_error("Allocation of the Bignum_CTX structure failed!");
 }
 
 BN_CTX* Bignum_CTX::get() {
@@ -47,6 +48,22 @@ bool operator!=(const Bignum& a, const Bignum& b) {
 	return !(a == b);
 }
 
+bool operator<(const Bignum& a, const Bignum& b) {
+	return BN_cmp(a.get(), b.get()) == -1;
+}
+
+bool operator>(const Bignum& a, const Bignum& b) {
+	return BN_cmp(a.get(), b.get()) == 1;
+}
+
+bool operator<=(const Bignum& a, const Bignum& b) {
+	return a < b || a == b;
+}
+
+bool operator>=(const Bignum& a, const Bignum& b) {
+	return a > b || a == b;
+}
+
 Bignum operator+(const Bignum& a, const Bignum& b) {
 	Bignum r;
 	handleError(BN_add(r.get(), a.get(), b.get()));
@@ -69,8 +86,9 @@ Bignum operator*(const Bignum& a, const Bignum& b) {
 }
 
 Bignum::Bignum()
-    : value(BN_new()) { // BN_CTX_secure_new()
-	handleError(value);
+    : value(BN_secure_new()) {
+	if (!value)
+		throw std::runtime_error("Allocation of the Bignum structure failed!");
 }
 
 Bignum::Bignum(unsigned long word)
@@ -110,7 +128,6 @@ const BIGNUM* Bignum::get() const {
 	return value;
 }
 
-// TODO: Bn_rand
 void Bignum::set_random_value(int bits) {
 	handleError(BN_rand(value, bits, BN_RAND_TOP_ANY, BN_RAND_BOTTOM_ANY));
 }
@@ -121,6 +138,10 @@ bool Bignum::check_num_bits(int length) const {
 
 bool Bignum::is_one() const {
 	return BN_is_one(value);
+}
+
+void Bignum::mod(const Bignum& mod) {
+	handleError(BN_mod(value, value, mod.get(), ctx.get()));
 }
 
 Bignum Bignum::inverse(const Bignum& num, const Bignum& mod) {
@@ -164,7 +185,7 @@ void Bignum::set(const std::string& hexWord) {
 }
 
 Bignum::~Bignum() {
-	BN_free(value); // BN_clear_free()
+	BN_clear_free(value);
 }
 
 Bignum& Bignum::operator+=(const Bignum& a) {

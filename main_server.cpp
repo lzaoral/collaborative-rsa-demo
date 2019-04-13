@@ -109,12 +109,12 @@ void sign_message() {
 
 int main() {
 	const std::string menu_msg("\x1B[1;33m*** SMPC RSA SERVER DEMO ***\x1B[0m\n"
-	                          "Choose action:\n"
-	                          "1. Get client keys and generate server keys\n"
-	                          "2. Finish computation of signature\n"
-	                          "3. Test RSA implementation\n"
-	                          "0. Exit program\n"
-	                          "Selection:\n");
+	                           "Choose action:\n"
+	                           "1. Get client keys and generate server keys\n"
+	                           "2. Finish computation of signature\n"
+	                           "3. Test RSA implementation\n"
+	                           "0. Exit program\n"
+	                           "Selection:\n");
 
 	RSA_Keys rsa{ true };
 

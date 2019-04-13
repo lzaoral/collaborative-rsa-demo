@@ -28,6 +28,10 @@ private:
 
 	friend bool operator==(const Bignum& a, const Bignum& b);
 	friend bool operator!=(const Bignum& a, const Bignum& b);
+	friend bool operator<(const Bignum& a, const Bignum& b);
+	friend bool operator>(const Bignum& a, const Bignum& b);
+	friend bool operator<=(const Bignum& a, const Bignum& b);
+	friend bool operator>=(const Bignum& a, const Bignum& b);
 
 	friend Bignum operator+(const Bignum& a, const Bignum& b);
 	friend Bignum operator-(const Bignum& a, const Bignum& b);
@@ -65,6 +69,7 @@ public:
 	static Bignum mod_sub(const Bignum& a, const Bignum& b, const Bignum& mod);
 	static Bignum mod_exp(const Bignum& a, const Bignum& b, const Bignum& mod);
 	void mod_mul_self(const Bignum& a, const Bignum& mod);
+	void mod(const Bignum& mod);
 
 	BIGNUM* get();
 	const BIGNUM* get() const;
@@ -72,7 +77,6 @@ public:
 	void set(unsigned long word);
 	void set(const std::string& word);
 
-	// TODO: Bn_rand
 	void set_random_value(int bits);
 	bool check_num_bits(int length) const;
 	bool is_one() const;

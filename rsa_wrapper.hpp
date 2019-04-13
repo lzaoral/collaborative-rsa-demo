@@ -9,14 +9,14 @@
 class Rsa {
 private:
 	RSA* value;
-	static const int PRIME_COUNT = 4;
 
 public:
-	Rsa(Bignum e, int bits)
+	Rsa(Bignum e, int bits, int primes)
 	    : value(RSA_new()) {
+		if (!value)
+			throw std::runtime_error("Allocation of the RSA structure failed!");
 		
-		handleError(value);
-		handleError(RSA_generate_multi_prime_key(value, bits, PRIME_COUNT, e.get(), nullptr));
+		handleError(RSA_generate_multi_prime_key(value, bits, primes, e.get(), nullptr));
 	}
 
 	std::pair<Bignum, Bignum> getPrimes() const {
