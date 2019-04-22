@@ -51,14 +51,14 @@ void sign_message() {
 
 	std::ifstream client_keys(CLIENT_KEYS_CLIENT_FILE), messsage_file(MESSAGE_FILE);
 	if (!client_keys || !messsage_file)
-		throw std::runtime_error("Client keys have not been generated or message file is missing!");
+		throw std::runtime_error("Client key has not been generated or message file is missing!");
 
 	Bignum d_client, n, message;
 	client_keys >> d_client >> n;
 	messsage_file >> message;
 
 	if (!client_keys || !messsage_file)
-		throw std::runtime_error("Could not read the client keys or the message!");
+		throw std::runtime_error("Could not read the client key or the message!");
 
 	check_message_and_modulus(message, n);
 	Bignum signature = Bignum::mod_exp(message, d_client, n);
@@ -88,7 +88,7 @@ void verify_signature() {
 
 	std::ifstream signature_file(FINAL_SIG_FILE), public_key(PUBLIC_KEY_FILE);
 	if (!signature_file || !public_key)
-		throw std::runtime_error("Signature or public key files are missing. Did you run the server?");
+		throw std::runtime_error("Signature or public key file is missing. Did you run the server?");
 
 	Bignum message, signature, n;
 	signature_file >> message >> signature;
@@ -96,7 +96,7 @@ void verify_signature() {
 	public_key >> n >> n;
 
 	if (!signature_file || !public_key)
-		throw std::runtime_error("Could not read signature or public keys.");
+		throw std::runtime_error("Could not read signature or public key.");
 
 	check_message_and_modulus(message, n);
 	std::cout << (Bignum::mod_exp(signature, RSA_PUBLIC_EXP, n) == message
