@@ -100,8 +100,8 @@ void verify_signature() {
 
 	check_message_and_modulus(message, n);
 	std::cout << (Bignum::mod_exp(signature, RSA_PUBLIC_EXP, n) == message
-	        ? "\x1B[1;31mNOK\x1B[0m\n"
-	        : "\x1B[1;32mOK\x1B[0m\n");
+	        ? "\x1B[1;32mOK\x1B[0m\n"
+	        : "\x1B[1;31mNOK\x1B[0m\n");
 }
 
 #endif // CLIENT_COMMON_HPP
