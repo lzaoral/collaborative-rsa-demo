@@ -1,7 +1,7 @@
 #include "client_common.hpp"
 
 /**
- * Prints the usage string.
+ * @brief Prints the usage string.
  * 
  * @param argv0 relative path to the executable
  */
@@ -15,7 +15,7 @@ void printUsage(const std::string& argv0) {
 }
 
 /**
- * Enum representing the allowed actions of the client.
+ * @brief Enum representing the allowed actions of the client.
  */
 enum class Action {
 	GENERATE,
@@ -26,7 +26,7 @@ enum class Action {
 };
 
 /**
- * Parses the first positional argument
+ * @brief Parses the first positional argument
  * 
  * @param argv1 string with the first argument
  * @return Action value of the argument
@@ -52,7 +52,7 @@ Action parseAction(const std::string& argv1) {
 }
 
 /**
- * Main function of the client demo.
+ * @brief Main function of the client demo.
  */
 int main(int argc, char* argv[]) {
 	if (argc != 2) {
@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
 
 			RSA_keys_generator rsa;
 			rsa.generate_RSA_keys();
-			save_keys(rsa.get_d_client(), rsa.get_d_server(), rsa.get_n());
+			save_keys(rsa.get_d1_client(), rsa.get_d1_server(), rsa.get_n());
 			break;
 		}
 		case Action::SIGN:

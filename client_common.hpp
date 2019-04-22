@@ -1,107 +1,101 @@
 #ifndef CLIENT_COMMON_HPP
 #define CLIENT_COMMON_HPP
 
-#include "bignum_wrapper.hpp"
 #include "common.hpp"
-#include "rsa_wrapper.hpp"
-
 #include <fstream>
 
-/**
- * Saves generated keys to corresponding files, one for the client itself
- * and the other one for the server.
- * 
- * @param d_client - client share of the client private exponent (d'_1)
- * @param d_server - server share of the client private exponent (d''_1)
- * @param n - client modulus
- * @throws std::runtime_exception if an IO problem occurs
- * @throws std::out_of_range if an Bignum bit length test fails
- */
-void save_keys(const Bignum& d_client, const Bignum& d_server, const Bignum& n) {
-	std::cout << "Storing keys... ";
+class Client : public SMPC_demo {
+public:
+	/**
+ 	* @brief Generates and saves the client keys.
+	*
+ 	* @throws std::runtime_exception if an IO problem occurs or some Bignum
+ 	* operation failed
+ 	* @throws std::out_of_range if an Bignum bit length test fails
+ 	*/
+	void generate_keys() override {
+		if (std::ifstream(CLIENT_KEYS_CLIENT_FILE) && std::ifstream(CLIENT_KEYS_SERVER_FILE)
+		    && !regenerateKeys())
+			return;
 
-	check_num_bits(n, RSA_MODULUS_BITS);
+		RSA_keys_generator rsa;
+		rsa.generate_RSA_keys();
+		save_keys(rsa.get_d1_client(), rsa.get_d1_server(), rsa.get_n());
+	}
 
-	std::ofstream client(CLIENT_KEYS_CLIENT_FILE), server(CLIENT_KEYS_SERVER_FILE);
-	if (!client || !server)
-		throw std::runtime_error("Could not save the keys!");
+	/**
+ 	* @brief Signs the given message with client share of the client
+ 	* private exponent and saves it to corresponding file.
+ 	* 
+ 	* @throws std::runtime_exception if an IO problem occurs or some Bignum
+ 	*     operation failed
+ 	* @throws std::out_of_range if an Bignum bit length test fails
+ 	*/
+	void sign_message() override {
+		std::cout << "Signing... ";
 
-	// exponent e is hardcoded and public, no need to send it out
-	client << d_client << '\n'
-	       << n;
-	server << d_server << '\n'
-	       << n;
+		// Load the keys
+		std::ifstream client_keys(CLIENT_KEYS_CLIENT_FILE), messsage_file(MESSAGE_FILE);
+		if (!client_keys || !messsage_file)
+			throw std::runtime_error("Client key has not been generated or message file is missing!");
 
-	if (!client || !server)
-		throw std::runtime_error("Could not save the keys!");
+		Bignum d1_client, n, m;
+		client_keys >> d1_client >> n;
+		messsage_file >> m;
 
-	std::cout << "\x1B[1;32mOK\x1B[0m\n";
-}
+		if (!client_keys || !messsage_file)
+			throw std::runtime_error("Could not read the client key or the message!");
 
-/**
- * Signs the given message with client share of the client private exponent
- * and saves it to corresponting file.
- * 
- * @throws std::runtime_exception if an IO problem occurs or some Bignum
- *     operation failed
- * @throws std::out_of_range if an Bignum bit length test fails
- */
-void sign_message() {
-	std::cout << "Signing... ";
+		// Check and sign
+		check_message_and_modulus(m, n, RSA_MODULUS_BITS);
+		Bignum y = Bignum::mod_exp(m, d1_client, n);
 
-	std::ifstream client_keys(CLIENT_KEYS_CLIENT_FILE), messsage_file(MESSAGE_FILE);
-	if (!client_keys || !messsage_file)
-		throw std::runtime_error("Client key has not been generated or message file is missing!");
+		// Save the signature
+		std::ofstream client_sig(CLIENT_SIG_SHARE_FILE);
+		if (!client_sig)
+			throw std::runtime_error("Could not save the signature!");
 
-	Bignum d_client, n, message;
-	client_keys >> d_client >> n;
-	messsage_file >> message;
+		client_sig << m << '\n'
+		           << y << '\n';
 
-	if (!client_keys || !messsage_file)
-		throw std::runtime_error("Could not read the client key or the message!");
+		if (!client_sig)
+			throw std::runtime_error("Could not save the signature!");
 
-	check_message_and_modulus(message, n);
-	Bignum signature = Bignum::mod_exp(message, d_client, n);
+		std::cout << "\x1B[1;32mOK\x1B[0m\n";
+	}
 
-	std::ofstream client_sig(CLIENT_SIG_SHARE_FILE);
-	if (!client_sig)
-		throw std::runtime_error("Could not save the signature!");
+private:
+	/**
+ 	* @brief Saves generated keys to corresponding files, one for the client
+ 	* itself and the other one for the server.
+ 	* 
+ 	* @param d1_client - client share of the client private exponent (d'_1)
+ 	* @param d1_server - server share of the client private exponent (d''_1)
+ 	* @param n1 - client modulus
+ 	* @throws std::runtime_exception if an IO problem occurs
+ 	* @throws std::out_of_range if the client modulus bit length test fails
+ 	*/
+	void save_keys(const Bignum& d1_client, const Bignum& d1_server,
+	    const Bignum& n1) {
+		std::cout << "Storing keys... ";
 
-	client_sig << message << '\n'
-	           << signature;
+		check_num_bits(n1, RSA_MODULUS_BITS);
 
-	if (!client_sig)
-		throw std::runtime_error("Could not save the signature!");
+		std::ofstream client(CLIENT_KEYS_CLIENT_FILE), server(CLIENT_KEYS_SERVER_FILE);
+		if (!client || !server)
+			throw std::runtime_error("Could not save the keys!");
 
-	std::cout << "\x1B[1;32mOK\x1B[0m\n";
-}
+		// exponent e is hardcoded and public, no need to send it out
+		client << d1_client << '\n'
+		       << n1 << '\n';
+		server << d1_server << '\n'
+		       << n1 << '\n';
 
-/**
- * Verifies the given signature.
- * 
- * @throws std::runtime_exception if an IO problem occurs or some Bignum
- *     operation failed
- * @throws std::out_of_range if an Bignum bit length test fails
- */
-void verify_signature() {
-	std::cout << "Verifying signature... ";
+		if (!client || !server)
+			throw std::runtime_error("Could not save the keys!");
 
-	std::ifstream signature_file(FINAL_SIG_FILE), public_key(PUBLIC_KEY_FILE);
-	if (!signature_file || !public_key)
-		throw std::runtime_error("Signature or public key file is missing. Did you run the server?");
-
-	Bignum message, signature, n;
-	signature_file >> message >> signature;
-	// public exponent is hardcoded, we can skip it
-	public_key >> n >> n;
-
-	if (!signature_file || !public_key)
-		throw std::runtime_error("Could not read signature or public key.");
-
-	check_message_and_modulus(message, n);
-	std::cout << (Bignum::mod_exp(signature, RSA_PUBLIC_EXP, n) == message
-	        ? "\x1B[1;32mOK\x1B[0m\n"
-	        : "\x1B[1;31mNOK\x1B[0m\n");
-}
+		std::cout << "\x1B[1;32mOK\x1B[0m\n";
+	}
+};
 
 #endif // CLIENT_COMMON_HPP

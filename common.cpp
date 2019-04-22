@@ -1,4 +1,34 @@
 #include "common.hpp"
+#include <fstream>
+
+/****************************
+ * SMPC_demo implementation *
+ ***************************/
+
+void SMPC_demo::verify_signature() {
+	std::cout << "Verifying signature... ";
+
+	std::ifstream signature_file(FINAL_SIG_FILE), public_key(PUBLIC_KEY_FILE);
+	if (!signature_file || !public_key)
+		throw std::runtime_error("Signature or public key file is missing. Did you run the server?");
+
+	Bignum message, signature, n;
+	signature_file >> message >> signature;
+	// public exponent is hardcoded, we can skip it
+	public_key >> n >> n;
+
+	if (!signature_file || !public_key)
+		throw std::runtime_error("Could not read signature or public key.");
+
+	check_message_and_modulus(message, n, RSA_MODULUS_BITS * 2);
+	std::cout << (Bignum::mod_exp(signature, RSA_PUBLIC_EXP, n) == message
+	        ? "\x1B[1;32mOK\x1B[0m\n"
+	        : "\x1B[1;31mNOK\x1B[0m\n");
+}
+
+/*************************************
+ * RSA_keys_generator implementation *
+ ************************************/
 
 void RSA_keys_generator::generate_RSA_keys() {
 	if (!is_test)
@@ -39,25 +69,27 @@ void RSA_keys_generator::generate_modulus(const Bignum& p, const Bignum& q) {
 
 void RSA_keys_generator::generate_private_key(const Bignum& phi_p, const Bignum& phi_q) {
 	Bignum phi_n = phi_p * phi_q;
-	Bignum d = Bignum::inverse(RSA_PUBLIC_EXP, phi_n);
+	d2 = Bignum::inverse(RSA_PUBLIC_EXP, phi_n);
 
-	if (is_test || is_server) {
-		d_server = d;
+	if (is_test || is_server)
 		return;
-	}
 
-	d_client.set_random_value(RSA_MODULUS_BITS);
-	d_client.mod(phi_n);
+	d1_client.set_random_value(RSA_MODULUS_BITS);
+	d1_client.mod(phi_n);
 
-	d_server = Bignum::mod_sub(d.get(), d_client, phi_n);
+	d1_server = Bignum::mod_sub(d2, d1_client, phi_n);
 }
 
-const Bignum& RSA_keys_generator::get_d_client() const {
-	return d_client;
+const Bignum& RSA_keys_generator::get_d1_client() const {
+	return d1_client;
 }
 
-const Bignum& RSA_keys_generator::get_d_server() const {
-	return d_server;
+const Bignum& RSA_keys_generator::get_d1_server() const {
+	return d1_server;
+}
+
+const Bignum& RSA_keys_generator::get_d2() const {
+	return d2;
 }
 
 const Bignum& RSA_keys_generator::get_n() const {
@@ -76,7 +108,7 @@ void RSA_keys_generator::run_test() {
 		generate_RSA_keys();
 
 		Bignum ciphertext = Bignum::mod_exp(original, RSA_PUBLIC_EXP, n);
-		Bignum plaintext = Bignum::mod_exp(ciphertext, d_server, n);
+		Bignum plaintext = Bignum::mod_exp(ciphertext, d2, n);
 
 		if (plaintext != original) {
 			failed = true;
@@ -91,22 +123,26 @@ void RSA_keys_generator::run_test() {
 	is_test = false;
 }
 
+/********************
+ * Helper functions *
+ *******************/
+
 void check_num_bits(const Bignum& num, unsigned long bits) {
 	if (!num.check_num_bits(bits))
 		throw std::out_of_range("Number generated is not a " + std::to_string(bits) + "-bit number.");
 }
 
-void check_message_and_modulus(const Bignum& message, const Bignum& n) {
-	check_num_bits(n, RSA_MODULUS_BITS);
+void check_message_and_modulus(const Bignum& message, const Bignum& n, unsigned long bits) {
+	check_num_bits(n, bits);
 	if (message > n)
 		throw std::out_of_range("Message cannot be greater than the modulus");
 }
 
-bool regeneration() {
+bool regenerateKeys() {
 	std::string answer;
 
 	while (true) {
-		std::cout << "Do you want to regenerate client keys? (y/n): ";
+		std::cout << "Do you want to regenerate the keys? (y/n): ";
 		std::getline(std::cin, answer);
 
 		if (std::cin.eof()) {

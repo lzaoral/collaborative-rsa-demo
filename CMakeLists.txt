@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(collabrsa)
+project(smpc_rsa)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wextra -pedantic -Wold-style-cast")
 
@@ -12,8 +12,5 @@ add_library(common STATIC common.cpp)
 add_library(bignum STATIC bignum_wrapper.cpp)
 set(EXTRA_LIBS OpenSSL::Crypto bignum common)
 
-add_executable(main_client main_client.cpp ${HEADERS} ${SOURCES})
-target_link_libraries(main_client ${EXTRA_LIBS})
-
-add_executable(main_server main_server.cpp ${HEADERS} ${SOURCES})
-target_link_libraries(main_server ${EXTRA_LIBS})
+add_executable(smpc_rsa main.cpp)
+target_link_libraries(smpc_rsa ${EXTRA_LIBS})
