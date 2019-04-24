@@ -7,33 +7,46 @@
 #define CLIENT_KEYS_CLIENT_FILE "client_card.key"
 #define CLIENT_KEYS_SERVER_FILE "for_server.key"
 #define SERVER_KEYS_FILE "server.key"
+#define PUBLIC_KEY_FILE "public_key.key"
 
 #define MESSAGE_FILE "message.txt"
 #define CLIENT_SIG_SHARE_FILE "client.sig"
 #define FINAL_SIG_FILE "final.sig"
 
-#define PUBLIC_KEY_FILE "public_key.key"
+#define RSA_PRIME_COUNT 4u
+#define RSA_PUBLIC_EXP 65537u
+#define RSA_MODULUS_BITS 2048u
 
-#define RSA_PRIME_COUNT 4
-#define RSA_PUBLIC_EXP 65537
-#define RSA_MODULUS_BITS 2048
-
+/**
+ * @brief Abstract class representing a party (e.g. client) in this protocol.
+ */
 class SMPC_demo {
 public:
+	/**
+ 	 * @brief Generates the RSA keys of a given party.
+     */
 	virtual void generate_keys() = 0;
+
+	/**
+ 	* @brief Performs a computation of a signature share of a given party
+    */
 	virtual void sign_message() = 0;
 
 	/**
- 	* @brief Verifies the given signature.
+ 	* @brief Verifies the given final signature.
  	* 
  	* @throws std::runtime_exception if an IO problem occurs or some Bignum
  	*     operation failed
  	* @throws std::out_of_range if an Bignum bit length test fails
  	*/
-	void verify_signature();
+	void verify_final_signature();
+
 	virtual ~SMPC_demo() = default;
 };
 
+/**
+ * @brief Class representing the client or server generator of RSA keys.
+ */
 class RSA_keys_generator {
 private:
 	static const unsigned TEST_COUNT{ 1000 };
@@ -46,12 +59,10 @@ public:
 
 	/**
 	 * @brief Construts the client/server RSA key generator
-	 * depending on the server parameter.
-	 * 
-	 * @param server sets the server environment
+	 * depending on the is_server parameter.
 	 */
-	RSA_keys_generator(bool server)
-	    : is_server(server) {}
+	RSA_keys_generator(bool is_server)
+	    : is_server(is_server) {}
 
 	/**
     * @brief Generates needed RSA keys. If the server attribute
@@ -93,7 +104,7 @@ public:
 	const Bignum& get_n() const;
 
 	/**
-    * @brief Runs self-test. Test count is set in the TEST_COUNT
+    * @brief Runs a self-test. Test count is set in the TEST_COUNT
 	* attribute.
     */
 	void run_test();
@@ -140,6 +151,6 @@ void check_message_and_modulus(const Bignum& message, const Bignum& n, unsigned 
  * @return user choice
  * @throws std::runtime_exception if an IO problem occurs
  */
-bool regenerateKeys();
+bool regenerate_keys();
 
 #endif // COMMON_HPP

@@ -4,51 +4,10 @@
 #include <memory>
 
 /**
- * @brief Prints the usage string.
- * 
- * @param argv0 relative path to the executable
+ * Main file of the SMPC RSA Demo implementation.
+ *
+ * @author Lukáš Zaoral
  */
-void printUsage(const std::string& argv0) {
-	std::cerr << "Unknown parameters.\nUSAGE:\n"
-	          << argv0 << "[client|server] [generate|sign|verify|test]\n"
-	          << "\tgenerate - Generate and save the [client|server] keys\n"
-	          << "\tsign - Sign the message\n"
-	          << "\tverify - Verify the signature\n"
-	          << "\ttest - Key generator self-test\n";
-}
-
-/**
- * @brief Prints out the header depending on the isServer
- * parameter.
- * 
- * @param isServer true if server false otherwise
- */
-void printHeader(bool isServer) {
-	std::cout << "\x1B[1;33m*** SMPC RSA "
-	          << (isServer ? "SERVER" : "CLIENT")
-	          << " DEMO ***\x1B[0m\n";
-}
-
-/**
- * @brief Parses the mode to used, client or server.
- * 
- * @param argv1 first positional argument
- * @return std::unique_ptr<SMPC_demo> returns pointer to the
- * selected mode, nullptr of unknown mode has been used.
- */
-std::unique_ptr<SMPC_demo> parseMode(const std::string& argv1) {
-	if (argv1 == "client") {
-		printHeader(false);
-		return std::make_unique<Client>();
-	}
-
-	if (argv1 == "server") {
-		printHeader(true);
-		return std::make_unique<Server>();
-	}
-
-	return nullptr;
-}
 
 /**
  * @brief Enum representing the allowed actions.
@@ -62,25 +21,69 @@ enum class Action {
 };
 
 /**
- * @brief Parses the second positional argument
+ * @brief Prints the usage string.
  * 
- * @param argv2 string with the first argument
- * @return Action value of the argument
+ * @param path relative path to the executable
  */
-Action parseAction(const std::string& argv2) {
-	if (argv2 == "generate") {
+void print_usage(const std::string& path) {
+	std::cerr << "Unknown parameters.\nUSAGE:\n"
+	          << path << "[client|server] [generate|sign|verify|test]\n"
+	          << "\tgenerate - Generate and save the [client|server] keys\n"
+	          << "\tsign - Sign the message\n"
+	          << "\tverify - Verify the signature\n"
+	          << "\ttest - Key generator self-test\n";
+}
+
+/**
+ * @brief Prints out the header depending on the is_server
+ * parameter.
+ */
+void print_header(bool is_server) {
+	std::cout << "\x1B[1;33m*** SMPC RSA "
+	          << (is_server ? "SERVER" : "CLIENT")
+	          << " DEMO ***\x1B[0m\n";
+}
+
+/**
+ * @brief Creates an instance of client or server
+ * depending on the parameter.
+ * 
+ * @return std::unique_ptr<SMPC_demo> returns pointer to the
+ * selected mode, nullptr of unknown mode has been used.
+ */
+std::unique_ptr<SMPC_demo> get_mode_instance(const std::string& mode) {
+	if (mode == "client") {
+		print_header(false);
+		return std::make_unique<Client>();
+	}
+
+	if (mode == "server") {
+		print_header(true);
+		return std::make_unique<Server>();
+	}
+
+	return nullptr;
+}
+
+/**
+ * @brief Parses the given string to corresponding Action
+ * 
+ * @return Action corresponding to the argument
+ */
+Action parse_action(const std::string& action) {
+	if (action == "generate") {
 		return Action::GENERATE;
 	}
 
-	if (argv2 == "sign") {
+	if (action == "sign") {
 		return Action::SIGN;
 	}
 
-	if (argv2 == "verify") {
+	if (action == "verify") {
 		return Action::VERIFY;
 	}
 
-	if (argv2 == "test") {
+	if (action == "test") {
 		return Action::TEST;
 	}
 
@@ -92,20 +95,18 @@ Action parseAction(const std::string& argv2) {
  */
 int main(int argc, char* argv[]) {
 	if (argc != 3) {
-		printUsage(argv[0]);
+		print_usage(argv[0]);
 		return EXIT_FAILURE;
 	}
 
-	std::unique_ptr<SMPC_demo> smpc_rsa = parseMode(argv[1]);
+	std::unique_ptr<SMPC_demo> smpc_rsa = get_mode_instance(argv[1]);
 	if (!smpc_rsa) {
-		printUsage(argv[0]);
+		print_usage(argv[0]);
 		return EXIT_FAILURE;
 	}
-
-	std::cout << "\x1B[1;33m*** SMPC RSA CLIENT DEMO ***\x1B[0m\n";
 
 	try {
-		switch (parseAction(argv[2])) {
+		switch (parse_action(argv[2])) {
 		case Action::GENERATE:
 			smpc_rsa->generate_keys();
 			break;
@@ -115,7 +116,7 @@ int main(int argc, char* argv[]) {
 			break;
 
 		case Action::VERIFY:
-			smpc_rsa->verify_signature();
+			smpc_rsa->verify_final_signature();
 			break;
 
 		case Action::TEST:
@@ -123,7 +124,7 @@ int main(int argc, char* argv[]) {
 			break;
 
 		default:
-			printUsage(argv[0]);
+			print_usage(argv[0]);
 			return EXIT_FAILURE;
 		}
 	} catch (const std::exception& e) {

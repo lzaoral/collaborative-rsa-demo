@@ -6,6 +6,10 @@
 #include <openssl/rsa.h>
 #include <vector>
 
+/**
+ * @brief Wrapper of the RSA struct and used RSA operations 
+ * defined in the OPENSSL library.
+ */
 class Rsa {
 private:
 	RSA* value;
@@ -13,15 +17,14 @@ private:
 public:
 	Rsa(Bignum e, int bits, int primes)
 	    : value(RSA_new()) {
-		if (!value)
-			throw std::runtime_error("Allocation of the RSA structure failed!");
-		
-		handleError(RSA_generate_multi_prime_key(value, bits, primes, e.get(), nullptr));
+
+		handle_error(value);
+		handle_error(RSA_generate_multi_prime_key(value, bits, primes, e.get(), nullptr));
 	}
 
 	std::pair<Bignum, Bignum> getPrimes() const {
 		std::vector<const BIGNUM*> primes(RSA_get_multi_prime_extra_count(value) + 2);
-		handleError(RSA_get0_multi_prime_factors(value, primes.data()));
+		handle_error(RSA_get0_multi_prime_factors(value, primes.data()));
 
 		return { primes[0], primes[1] };
 	}

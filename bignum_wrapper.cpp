@@ -1,16 +1,12 @@
 #include "bignum_wrapper.hpp"
 
-Bignum_CTX Bignum::ctx;
-
-void handleError(bool errCode) {
-	if (!errCode)
-		throw std::runtime_error(ERR_error_string(ERR_get_error(), nullptr));
-}
+/*********************************
+ * Bignum wrapper implementation *
+ ********************************/
 
 Bignum_CTX::Bignum_CTX()
     : value(BN_CTX_secure_new()) {
-	if (!value)
-		throw std::runtime_error("Allocation of the Bignum_CTX structure failed!");
+	handle_error(value);
 }
 
 BN_CTX* Bignum_CTX::get() {
@@ -21,9 +17,16 @@ Bignum_CTX::~Bignum_CTX() {
 	BN_CTX_free(value);
 }
 
+/*********************************
+ * Bignum wrapper implementation *
+ ********************************/
+
+// Initialisation of a static member of the Bignum class
+Bignum_CTX Bignum::ctx;
+
 std::ostream& operator<<(std::ostream& os, const Bignum& bn) {
 	char* const dec = BN_bn2hex(bn.get());
-	handleError(dec);
+	handle_error(dec);
 
 	os << std::string(dec);
 
@@ -35,7 +38,7 @@ std::istream& operator>>(std::istream& is, Bignum& bn) {
 	std::string tmp;
 
 	is >> tmp;
-	bn.set(tmp);
+	bn.set(tmp, true);
 
 	return is;
 }
@@ -66,49 +69,53 @@ bool operator>=(const Bignum& a, const Bignum& b) {
 
 Bignum operator+(const Bignum& a, const Bignum& b) {
 	Bignum r;
-	handleError(BN_add(r.get(), a.get(), b.get()));
+	handle_error(BN_add(r.get(), a.get(), b.get()));
 
 	return r;
 }
 
 Bignum operator-(const Bignum& a, const Bignum& b) {
 	Bignum r;
-	handleError(BN_sub(r.get(), a.get(), b.get()));
+	handle_error(BN_sub(r.get(), a.get(), b.get()));
 
 	return r;
 }
 
 Bignum operator*(const Bignum& a, const Bignum& b) {
 	Bignum r;
-	handleError(BN_mul(r.get(), a.get(), b.get(), Bignum::ctx.get()));
+	handle_error(BN_mul(r.get(), a.get(), b.get(), Bignum::ctx.get()));
 
 	return r;
 }
 
 Bignum::Bignum()
     : value(BN_secure_new()) {
-	if (!value)
-		throw std::runtime_error("Allocation of the Bignum structure failed!");
+	handle_error(value);
 }
 
 Bignum::Bignum(unsigned long word)
     : Bignum() {
-	handleError(BN_set_word(value, word));
+	handle_error(BN_set_word(value, word));
 }
 
-Bignum::Bignum(const std::string& word)
+Bignum::Bignum(const std::string& word, bool is_hex)
     : Bignum() {
-	handleError(BN_dec2bn(&value, word.c_str()));
+	if (is_hex) {
+		handle_error(BN_hex2bn(&value, word.c_str()));	
+		return;
+	}
+
+	handle_error(BN_dec2bn(&value, word.c_str()));
 }
 
 Bignum::Bignum(const Bignum& other)
     : value(BN_dup(other.get())) {
-	handleError(value);
+	handle_error(value);
 }
 
 Bignum::Bignum(const BIGNUM* other)
     : value(BN_dup(other)) {
-	handleError(value);
+	handle_error(value);
 }
 
 Bignum& Bignum::operator=(Bignum other) {
@@ -129,7 +136,7 @@ const BIGNUM* Bignum::get() const {
 }
 
 void Bignum::set_random_value(int bits) {
-	handleError(BN_rand(value, bits, BN_RAND_TOP_ANY, BN_RAND_BOTTOM_ANY));
+	handle_error(BN_rand(value, bits, BN_RAND_TOP_ANY, BN_RAND_BOTTOM_ANY));
 }
 
 bool Bignum::check_num_bits(int length) const {
@@ -141,47 +148,52 @@ bool Bignum::is_one() const {
 }
 
 void Bignum::mod(const Bignum& mod) {
-	handleError(BN_mod(value, value, mod.get(), ctx.get()));
+	handle_error(BN_mod(value, value, mod.get(), ctx.get()));
 }
 
 Bignum Bignum::inverse(const Bignum& num, const Bignum& mod) {
 	Bignum res;
-	handleError(BN_mod_inverse(res.get(), num.get(), mod.get(), ctx.get()));
+	handle_error(BN_mod_inverse(res.get(), num.get(), mod.get(), ctx.get()));
 
 	return res;
 }
 
 Bignum Bignum::gcd(const Bignum& a, const Bignum& b) {
 	Bignum res;
-	handleError(BN_gcd(res.get(), a.get(), b.get(), ctx.get()));
+	handle_error(BN_gcd(res.get(), a.get(), b.get(), ctx.get()));
 
 	return res;
 }
 
 Bignum Bignum::mod_sub(const Bignum& a, const Bignum& b, const Bignum& mod) {
 	Bignum res;
-	handleError(BN_mod_sub(res.get(), a.get(), b.get(), mod.get(), ctx.get()));
+	handle_error(BN_mod_sub(res.get(), a.get(), b.get(), mod.get(), ctx.get()));
 
 	return res;
 }
 
 Bignum Bignum::mod_exp(const Bignum& a, const Bignum& b, const Bignum& mod) {
 	Bignum res;
-	handleError(BN_mod_exp(res.get(), a.get(), b.get(), mod.get(), ctx.get()));
+	handle_error(BN_mod_exp(res.get(), a.get(), b.get(), mod.get(), ctx.get()));
 
 	return res;
 }
 
 void Bignum::mod_mul_self(const Bignum& a, const Bignum& mod) {
-	handleError(BN_mod_mul(value, value, a.get(), mod.get(), ctx.get()));
+	handle_error(BN_mod_mul(value, value, a.get(), mod.get(), ctx.get()));
 }
 
 void Bignum::set(unsigned long word) {
-	handleError(BN_set_word(value, word));
+	handle_error(BN_set_word(value, word));
 }
 
-void Bignum::set(const std::string& hexWord) {
-	handleError(BN_hex2bn(&value, hexWord.c_str()));
+void Bignum::set(const std::string& word, bool is_hex) {
+	if (is_hex) {
+		handle_error(BN_hex2bn(&value, word.c_str()));
+		return;
+	}
+
+	handle_error(BN_dec2bn(&value, word.c_str()));
 }
 
 Bignum::~Bignum() {
@@ -189,37 +201,37 @@ Bignum::~Bignum() {
 }
 
 Bignum& Bignum::operator+=(const Bignum& a) {
-	handleError(BN_add(value, value, a.get()));
+	handle_error(BN_add(value, value, a.get()));
 	return *this;
 }
 
 Bignum& Bignum::operator+=(unsigned long a) {
-	handleError(BN_add_word(value, a));
+	handle_error(BN_add_word(value, a));
 	return *this;
 }
 
 Bignum& Bignum::operator-=(const Bignum& a) {
-	handleError(BN_sub(value, value, a.get()));
+	handle_error(BN_sub(value, value, a.get()));
 	return *this;
 }
 
 Bignum& Bignum::operator-=(unsigned long a) {
-	handleError(BN_sub_word(value, a));
+	handle_error(BN_sub_word(value, a));
 	return *this;
 }
 
 Bignum& Bignum::operator*=(const Bignum& a) {
-	handleError(BN_mul(value, value, a.get(), ctx.get()));
+	handle_error(BN_mul(value, value, a.get(), ctx.get()));
 	return *this;
 }
 
 Bignum& Bignum::operator*=(unsigned long a) {
-	handleError(BN_mul_word(value, a));
+	handle_error(BN_mul_word(value, a));
 	return *this;
 }
 
 Bignum& Bignum::operator--() {
-	handleError(BN_sub_word(value, 1ul));
+	handle_error(BN_sub_word(value, 1ul));
 	return *this;
 }
 
@@ -231,7 +243,7 @@ Bignum Bignum::operator--(int) {
 }
 
 Bignum& Bignum::operator++() {
-	handleError(BN_add_word(value, 1ul));
+	handle_error(BN_add_word(value, 1ul));
 	return *this;
 }
 
@@ -240,4 +252,13 @@ Bignum Bignum::operator++(int) {
 	++*this;
 
 	return copy;
+}
+
+/********************
+ * Helper functions *
+ *******************/
+
+void handle_error(bool return_code) {
+	if (!return_code)
+		throw std::runtime_error(ERR_error_string(ERR_get_error(), nullptr));
 }

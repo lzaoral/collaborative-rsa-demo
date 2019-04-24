@@ -15,7 +15,7 @@ public:
  	*/
 	void generate_keys() override {
 		if (std::ifstream(CLIENT_KEYS_CLIENT_FILE) && std::ifstream(CLIENT_KEYS_SERVER_FILE)
-		    && !regenerateKeys())
+		    && !regenerate_keys())
 			return;
 
 		RSA_keys_generator rsa;

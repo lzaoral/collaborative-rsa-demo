@@ -5,7 +5,7 @@
  * SMPC_demo implementation *
  ***************************/
 
-void SMPC_demo::verify_signature() {
+void SMPC_demo::verify_final_signature() {
 	std::cout << "Verifying signature... ";
 
 	std::ifstream signature_file(FINAL_SIG_FILE), public_key(PUBLIC_KEY_FILE);
@@ -14,6 +14,7 @@ void SMPC_demo::verify_signature() {
 
 	Bignum message, signature, n;
 	signature_file >> message >> signature;
+	
 	// public exponent is hardcoded, we can skip it
 	public_key >> n >> n;
 
@@ -78,6 +79,7 @@ void RSA_keys_generator::generate_private_key(const Bignum& phi_p, const Bignum&
 	d1_client.mod(phi_n);
 
 	d1_server = Bignum::mod_sub(d2, d1_client, phi_n);
+	d2 = 0ul;
 }
 
 const Bignum& RSA_keys_generator::get_d1_client() const {
@@ -101,7 +103,7 @@ void RSA_keys_generator::run_test() {
 	std::cout << "Testing...\n";
 	bool failed{ false };
 
-	Bignum original{ "48654681406840615136541141350146514654630436044654674266181" };
+	Bignum original{ "48654681406840615136541141350146514654630436044654674266181", false };
 
 	for (std::size_t i = 1; i <= TEST_COUNT; i++) {
 		std::cout << "TEST " << i << ": " << std::flush;
@@ -138,7 +140,7 @@ void check_message_and_modulus(const Bignum& message, const Bignum& n, unsigned 
 		throw std::out_of_range("Message cannot be greater than the modulus");
 }
 
-bool regenerateKeys() {
+bool regenerate_keys() {
 	std::string answer;
 
 	while (true) {

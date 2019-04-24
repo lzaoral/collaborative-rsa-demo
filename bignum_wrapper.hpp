@@ -6,8 +6,10 @@
 
 #include <iostream>
 
-void handleError(bool errCode);
-
+/**
+ * @brief Wrapper of the BN_CTX struct defined in the OPENSSL
+ * library.
+ */
 class Bignum_CTX {
 private:
 	BN_CTX* const value;
@@ -19,6 +21,10 @@ public:
 	BN_CTX* get();
 };
 
+/**
+ * @brief Wrapper of the BIGNUM struct and used BIGNUM operations 
+ * defined in the OPENSSL library.
+ */
 class Bignum {
 private:
 	BIGNUM* value;
@@ -42,7 +48,7 @@ public:
 
 	Bignum();
 	Bignum(unsigned long word);
-	Bignum(const std::string& word);
+	Bignum(const std::string& word, bool is_hex);
 
 	Bignum(const Bignum& other);
 	Bignum(const BIGNUM* other);
@@ -75,11 +81,20 @@ public:
 	const BIGNUM* get() const;
 
 	void set(unsigned long word);
-	void set(const std::string& word);
+	void set(const std::string& word, bool is_hex);
 
 	void set_random_value(int bits);
 	bool check_num_bits(int length) const;
 	bool is_one() const;
 };
+
+/**
+ * @brief Transforms a non-zero OPENSSL error code into an exception.
+ * Does nothing otherwise.
+ * 
+ * @param err_code OPENSSL error code
+ * @throws std::runtime_error if an OPENSSL error occurred
+ */
+void handle_error(bool return_code);
 
 #endif // BIGNUM_WRAPPER_HPP

@@ -15,10 +15,10 @@ public:
  	*/
 	void generate_keys() override {
 		if (std::ifstream(SERVER_KEYS_FILE) && std::ifstream(PUBLIC_KEY_FILE)
-		    && !regenerateKeys())
+		    && !regenerate_keys())
 			return;
 
-		RSA_keys_generator rsa{ true }; // TODO: remove server mode???
+		RSA_keys_generator rsa{ true };
 		rsa.generate_RSA_keys();
 
 		const auto client = get_client_keys();
@@ -39,7 +39,7 @@ public:
 		std::cout << "Signing... ";
 
 		// Load the keys and partial signature
-		std::ifstream server("server.key"), sign("client.sig");
+		std::ifstream server(SERVER_KEYS_FILE), sign(CLIENT_SIG_SHARE_FILE);
 		if (!server || !sign)
 			throw std::runtime_error("Could read the given keys or client signature.");
 
@@ -50,12 +50,12 @@ public:
 		if (!server || !sign)
 			throw std::runtime_error("Could read the given keys or client signature.");
 
-        // Check valid input
+		// Check valid input
 		check_message_and_modulus(m, n1, RSA_MODULUS_BITS);
 		check_message_and_modulus(m, n2, RSA_MODULUS_BITS);
 		check_num_bits(n1 * n2, RSA_MODULUS_BITS * 2);
-		
-        // Finish and check the client signature
+
+		// Finish and check the client signature
 		Bignum s1 = Bignum::mod_exp(m, d1_server, n1);
 		s1.mod_mul_self(y, n1);
 
@@ -63,7 +63,8 @@ public:
 		if (m != m_test)
 			throw std::runtime_error("Fraudulent or corrupt client signature detected!");
 
-		// Compute the full signature TODO:
+		// Compute the full signature
+		// s = (((s2 - s1) / n1) mod n2) * n1 + s1
 		Bignum s = Bignum::mod_exp(m, d2, n2) - s1;
 		s.mod_mul_self(Bignum::inverse(n1, n2), n2);
 		s *= n1;
@@ -143,7 +144,7 @@ private:
 	    const Bignum& d2, const Bignum& n2, const Bignum& n) {
 		std::cout << "Storing keys... ";
 
-		std::ofstream server("server.key"), public_key("public.key");
+		std::ofstream server(SERVER_KEYS_FILE), public_key(PUBLIC_KEY_FILE);
 		if (!server || !public_key)
 			throw std::runtime_error("Could not save the keys!");
 
@@ -152,7 +153,6 @@ private:
 		       << d2 << '\n'
 		       << n2 << '\n';
 
-		//TODO:	CHECK
 		public_key << std::hex << RSA_PUBLIC_EXP << std::dec << '\n'
 		           << n << '\n';
 
