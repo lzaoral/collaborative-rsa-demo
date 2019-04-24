@@ -106,14 +106,13 @@ private:
 		if (!in)
 			throw std::runtime_error("Could not read the client keys!");
 
-		check_num_bits(n1, RSA_MODULUS_BITS);
-
 		std::cout << "\x1B[1;32mOK\x1B[0m\n";
 		return { d1_server, n1 };
 	}
 
 	/**
-    * Computes the public modulus.
+    * Computes the public modulus and checks the client and server moduli
+	* for correct bit length and comprimality.
     * 
     * @param n1 - client modulus
     * @param n2 - server modulus
@@ -122,6 +121,12 @@ private:
     * @throws std::runtime_error if a Bignum error occurs
     */
 	Bignum multiply_and_check_moduli(const Bignum& n1, const Bignum& n2) {
+		check_num_bits(n1, RSA_MODULUS_BITS);
+		check_num_bits(n2, RSA_MODULUS_BITS);
+
+		if (Bignum::gcd(n1, n2) == 1)
+			throw std::runtime_error("Client and server moduli must be comprime!");
+		
 		Bignum n = n1 * n2;
 		check_num_bits(n, RSA_MODULUS_BITS * 2);
 
