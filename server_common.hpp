@@ -86,7 +86,7 @@ public:
 
 private:
 	/**
-    * Reads and returns the server share of client keys.
+    * @brief Reads and returns the server share of client keys.
     * 
     * @return pair containing the server share of the client key
     *     and client modulus in this order
@@ -111,7 +111,7 @@ private:
 	}
 
 	/**
-    * Computes the public modulus and checks the client and server moduli
+    * @brief Computes the public modulus and checks the client and server moduli
 	* for correct bit length and comprimality.
     * 
     * @param n1 - client modulus
