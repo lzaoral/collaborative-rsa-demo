@@ -27,7 +27,7 @@ enum class Action {
  */
 void print_usage(const std::string& path) {
 	std::cerr << "Unknown parameters.\nUSAGE:\n"
-	          << path << "[client|server] [generate|sign|verify|test]\n"
+	          << path << " [client|server] [generate|sign|verify|test]\n"
 	          << "\tgenerate - Generate and save the [client|server] keys\n"
 	          << "\tsign - Sign the message\n"
 	          << "\tverify - Verify the signature\n"
