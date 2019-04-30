@@ -124,7 +124,7 @@ private:
 		check_num_bits(n1, RSA_MODULUS_BITS);
 		check_num_bits(n2, RSA_MODULUS_BITS);
 
-		if (Bignum::gcd(n1, n2) == 1)
+		if (Bignum::gcd(n1, n2) != 1)
 			throw std::runtime_error("Client and server moduli must be comprime!");
 		
 		Bignum n = n1 * n2;
