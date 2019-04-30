@@ -121,6 +121,8 @@ private:
     * @throws std::runtime_error if a Bignum error occurs
     */
 	Bignum multiply_and_check_moduli(const Bignum& n1, const Bignum& n2) {
+		std::cout << "Computing public key...";
+
 		check_num_bits(n1, RSA_MODULUS_BITS);
 		check_num_bits(n2, RSA_MODULUS_BITS);
 
@@ -130,6 +132,7 @@ private:
 		Bignum n = n1 * n2;
 		check_num_bits(n, RSA_MODULUS_BITS * 2);
 
+		std::cout << "\x1B[1;32mOK\x1B[0m\n";
 		return n;
 	}
 
