@@ -4,9 +4,6 @@ project(smpc_rsa)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wextra -pedantic -Wold-style-cast")
 
 find_package(OpenSSL REQUIRED)
-if(NOT OPENSSL_FOUND)
-    message(FATAL_ERROR "OpenSSL not found")
-endif()
 
 if (NOT "${OPENSSL_VERSION}" MATCHES "1.1.1*")
     message(FATAL_ERROR "OpenSSL 1.1.1 not found")
