@@ -9,9 +9,7 @@
 
 !*.cpp
 !*.hpp
+!*.sh
 
+!.vscode
 !*.json
-build
-vgcore*
-*.key
-*.sig
