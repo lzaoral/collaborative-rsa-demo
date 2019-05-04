@@ -18,10 +18,11 @@ public:
 		    && !regenerate_keys())
 			return;
 
+		const auto client = get_client_keys();
+		
 		RSA_keys_generator rsa{ true };
 		rsa.generate_RSA_keys();
 
-		const auto client = get_client_keys();
 		const auto n = multiply_and_check_moduli(client.second, rsa.get_n());
 
 		save_keys(client.first, client.second, rsa.get_d2(), rsa.get_n(), n);
@@ -71,7 +72,7 @@ public:
 		s += s1;
 
 		// Save the signature
-		std::ofstream out("signature.sig");
+		std::ofstream out(FINAL_SIG_FILE);
 		if (!out)
 			throw std::runtime_error("Could not write out the final signature.");
 
@@ -81,7 +82,7 @@ public:
 		if (!out)
 			throw std::runtime_error("Could not write out the final signature.");
 
-		std::cout << "\x1B[1;32mOK\x1B[0m\n\n";
+		std::cout << "\x1B[1;32mOK\x1B[0m\n";
 	}
 
 private:

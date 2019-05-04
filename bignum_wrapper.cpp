@@ -26,8 +26,10 @@ Bignum_CTX Bignum::ctx;
 
 std::ostream& operator<<(std::ostream& os, const Bignum& bn) {
 	char* const dec = BN_bn2hex(bn.get());
-	handle_error(dec);
-
+	if (!dec) {
+		os.setstate(std::ios::failbit);
+	}
+	
 	os << std::string(dec);
 
 	OPENSSL_free(dec);
@@ -38,7 +40,11 @@ std::istream& operator>>(std::istream& is, Bignum& bn) {
 	std::string tmp;
 
 	is >> tmp;
-	bn.set(tmp, true);
+	try {
+		bn.set(tmp, true);
+	} catch (std::runtime_error& e) {
+		is.setstate(std::ios::failbit);
+	}
 
 	return is;
 }

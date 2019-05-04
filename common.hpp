@@ -7,7 +7,7 @@
 #define CLIENT_KEYS_CLIENT_FILE "client_card.key"
 #define CLIENT_KEYS_SERVER_FILE "for_server.key"
 #define SERVER_KEYS_FILE "server.key"
-#define PUBLIC_KEY_FILE "public_key.key"
+#define PUBLIC_KEY_FILE "public.key"
 
 #define MESSAGE_FILE "message.txt"
 #define CLIENT_SIG_SHARE_FILE "client.sig"
