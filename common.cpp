@@ -131,13 +131,13 @@ void RSA_keys_generator::run_test() {
 
 void check_num_bits(const Bignum& num, unsigned long bits) {
 	if (!num.check_num_bits(bits))
-		throw std::out_of_range("Number generated is not a " + std::to_string(bits) + "-bit number.");
+		throw std::out_of_range("Number generated is not a " + std::to_string(bits) + "-bit number!");
 }
 
 void check_message_and_modulus(const Bignum& message, const Bignum& n, unsigned long bits) {
 	check_num_bits(n, bits);
 	if (message > n)
-		throw std::out_of_range("Message cannot be greater than the modulus");
+		throw std::out_of_range("Message cannot be greater than the modulus!");
 }
 
 bool regenerate_keys() {
