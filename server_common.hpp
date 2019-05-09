@@ -52,9 +52,9 @@ public:
 			throw std::runtime_error("Could read the given keys or client signature.");
 
 		// Check valid input
-		check_message_and_modulus(m, n1, RSA_MODULUS_BITS);
-		check_message_and_modulus(m, n2, RSA_MODULUS_BITS);
-		check_num_bits(n1 * n2, RSA_MODULUS_BITS * 2);
+		check_message_and_modulus(m, n1, RSA_PARTIAL_MODULUS_BITS);
+		check_message_and_modulus(m, n2, RSA_PARTIAL_MODULUS_BITS);
+		check_num_bits(n1 * n2, RSA_PARTIAL_MODULUS_BITS * 2);
 
 		// Finish and check the client signature
 		Bignum s1 = Bignum::mod_exp(m, d1_server, n1);
@@ -124,14 +124,14 @@ private:
 	Bignum multiply_and_check_moduli(const Bignum& n1, const Bignum& n2) {
 		std::cout << "Computing public key...";
 
-		check_num_bits(n1, RSA_MODULUS_BITS);
-		check_num_bits(n2, RSA_MODULUS_BITS);
+		check_num_bits(n1, RSA_PARTIAL_MODULUS_BITS);
+		check_num_bits(n2, RSA_PARTIAL_MODULUS_BITS);
 
 		if (Bignum::gcd(n1, n2) != 1)
 			throw std::runtime_error("Client and server moduli must be comprime!");
 		
 		Bignum n = n1 * n2;
-		check_num_bits(n, RSA_MODULUS_BITS * 2);
+		check_num_bits(n, RSA_PARTIAL_MODULUS_BITS * 2);
 
 		std::cout << "\x1B[1;32mOK\x1B[0m\n";
 		return n;

@@ -15,7 +15,7 @@
 
 #define RSA_PRIME_COUNT 4u
 #define RSA_PUBLIC_EXP 65537u
-#define RSA_MODULUS_BITS 2048u
+#define RSA_PARTIAL_MODULUS_BITS 2048u
 
 /**
  * @brief Abstract class representing a party (e.g. client) in this protocol.

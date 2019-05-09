@@ -21,7 +21,7 @@ void SMPC_demo::verify_final_signature() {
 	if (!signature_file || !public_key)
 		throw std::runtime_error("Could not read signature or public key.");
 
-	check_message_and_modulus(message, n, RSA_MODULUS_BITS * 2);
+	check_message_and_modulus(message, n, RSA_PARTIAL_MODULUS_BITS * 2);
 	std::cout << (Bignum::mod_exp(signature, RSA_PUBLIC_EXP, n) == message
 	        ? "\x1B[1;32mOK\x1B[0m\n"
 	        : "\x1B[1;31mNOK\x1B[0m\n");
@@ -35,11 +35,11 @@ void RSA_keys_generator::generate_RSA_keys() {
 	if (!is_test)
 		std::cout << "Generating keys... ";
 
-	const auto primes = Rsa(RSA_PUBLIC_EXP, RSA_MODULUS_BITS * 2, RSA_PRIME_COUNT).getPrimes();
+	const auto primes = Rsa(RSA_PUBLIC_EXP, RSA_PARTIAL_MODULUS_BITS * 2, RSA_PRIME_COUNT).getPrimes();
 	const Bignum& p = primes.first;
 	const Bignum& q = primes.second;
 
-	const auto bits = RSA_MODULUS_BITS / 2;
+	const auto bits = RSA_PARTIAL_MODULUS_BITS / 2;
 	check_num_bits(p, bits);
 	check_num_bits(q, bits);
 
@@ -65,7 +65,7 @@ void RSA_keys_generator::e_coprimality_test(const Bignum& num) {
 
 void RSA_keys_generator::generate_modulus(const Bignum& p, const Bignum& q) {
 	n = p * q;
-	check_num_bits(n, RSA_MODULUS_BITS);
+	check_num_bits(n, RSA_PARTIAL_MODULUS_BITS);
 }
 
 void RSA_keys_generator::generate_private_key(const Bignum& phi_p, const Bignum& phi_q) {
@@ -75,7 +75,7 @@ void RSA_keys_generator::generate_private_key(const Bignum& phi_p, const Bignum&
 	if (is_test || is_server)
 		return;
 
-	d1_client.set_random_value(RSA_MODULUS_BITS);
+	d1_client.set_random_value(RSA_PARTIAL_MODULUS_BITS);
 	d1_client.mod(phi_n);
 
 	d1_server = Bignum::mod_sub(d2, d1_client, phi_n);
