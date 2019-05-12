@@ -6,7 +6,7 @@
  ***************************/
 
 void SMPC_demo::verify_final_signature() {
-	std::cout << "Verifying signature... ";
+	std::cout << "Verifying signature... " << std::flush;
 
 	std::ifstream signature_file(FINAL_SIG_FILE), public_key(PUBLIC_KEY_FILE);
 	if (!signature_file || !public_key)
@@ -33,7 +33,7 @@ void SMPC_demo::verify_final_signature() {
 
 void RSA_keys_generator::generate_RSA_keys() {
 	if (!is_test)
-		std::cout << "Generating keys... ";
+		std::cout << "Generating keys... " << std::flush;
 
 	const auto primes = Rsa(RSA_PUBLIC_EXP, RSA_PARTIAL_MODULUS_BITS * 2, RSA_PRIME_COUNT).getPrimes();
 	const Bignum& p = primes.first;

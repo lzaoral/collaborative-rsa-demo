@@ -37,7 +37,7 @@ public:
  	* @throws std::out_of_range if an Bignum bit length test fails
  	*/
 	void sign_message() override {
-		std::cout << "Signing... ";
+		std::cout << "Signing... " << std::flush;
 
 		// Load the keys and partial signature
 		std::ifstream server(SERVER_KEYS_FILE), sign(CLIENT_SIG_SHARE_FILE);
@@ -95,7 +95,7 @@ private:
     * @throws std::out_of_range if the client modulus bit length test fails
     */
 	static std::pair<Bignum, Bignum> get_client_keys() {
-		std::cout << "Loading client keys... ";
+		std::cout << "Loading client keys... " << std::flush;
 
 		std::ifstream in(CLIENT_KEYS_SERVER_FILE);
 		if (!in)
@@ -122,7 +122,7 @@ private:
     * @throws std::runtime_error if a Bignum error occurs
     */
 	Bignum multiply_and_check_moduli(const Bignum& n1, const Bignum& n2) {
-		std::cout << "Computing public key...";
+		std::cout << "Computing public key... " << std::flush;
 
 		check_num_bits(n1, RSA_PARTIAL_MODULUS_BITS);
 		check_num_bits(n2, RSA_PARTIAL_MODULUS_BITS);
@@ -151,7 +151,7 @@ private:
  	*/
 	void save_keys(const Bignum& d1_server, const Bignum& n1,
 	    const Bignum& d2, const Bignum& n2, const Bignum& n) {
-		std::cout << "Storing keys... ";
+		std::cout << "Storing keys... " << std::flush;
 
 		std::ofstream server(SERVER_KEYS_FILE), public_key(PUBLIC_KEY_FILE);
 		if (!server || !public_key)

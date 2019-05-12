@@ -32,7 +32,7 @@ public:
  	* @throws std::out_of_range if an Bignum bit length test fails
  	*/
 	void sign_message() override {
-		std::cout << "Signing... ";
+		std::cout << "Signing... " << std::flush;
 
 		// Load the keys
 		std::ifstream client_keys(CLIENT_KEYS_CLIENT_FILE), messsage_file(MESSAGE_FILE);
@@ -77,7 +77,7 @@ private:
  	*/
 	void save_keys(const Bignum& d1_client, const Bignum& d1_server,
 	    const Bignum& n1) {
-		std::cout << "Storing keys... ";
+		std::cout << "Storing keys... " << std::flush;
 
 		check_num_bits(n1, RSA_PARTIAL_MODULUS_BITS);
 
