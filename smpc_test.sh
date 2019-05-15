@@ -9,11 +9,11 @@ for i in {1..1000}; do
         continue
     fi
 
-    if ! ./smpc_rsa client sign > /dev/null; then
+    if ! yes | ./smpc_rsa server generate > /dev/null; then
         continue
     fi
 
-    if ! yes | ./smpc_rsa server generate > /dev/null; then
+    if ! ./smpc_rsa client sign > /dev/null; then
         continue
     fi
 
