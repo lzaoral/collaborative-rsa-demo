@@ -97,7 +97,7 @@ private:
 	static std::pair<Bignum, Bignum> get_client_keys() {
 		std::cout << "Loading client keys... " << std::flush;
 
-		std::ifstream in(CLIENT_KEYS_SERVER_FILE);
+		std::ifstream in(CLIENT_KEYS_SERVER_SHARE_FILE);
 		if (!in)
 			throw std::runtime_error("Client keys have not been generated!");
 

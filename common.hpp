@@ -4,8 +4,8 @@
 #include "bignum_wrapper.hpp"
 #include "rsa_wrapper.hpp"
 
-#define CLIENT_KEYS_CLIENT_FILE "client_card.key"
-#define CLIENT_KEYS_SERVER_FILE "for_server.key"
+#define CLIENT_KEYS_CLIENT_SHARE_FILE "client_card.key"
+#define CLIENT_KEYS_SERVER_SHARE_FILE "for_server.key"
 #define SERVER_KEYS_FILE "server.key"
 #define PUBLIC_KEY_FILE "public.key"
 

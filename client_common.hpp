@@ -14,7 +14,7 @@ public:
  	* @throws std::out_of_range if an Bignum bit length test fails
  	*/
 	void generate_keys() override {
-		if (std::ifstream(CLIENT_KEYS_CLIENT_FILE) && std::ifstream(CLIENT_KEYS_SERVER_FILE)
+		if (std::ifstream(CLIENT_KEYS_CLIENT_SHARE_FILE) && std::ifstream(CLIENT_KEYS_SERVER_SHARE_FILE)
 		    && !regenerate_keys())
 			return;
 
@@ -35,7 +35,7 @@ public:
 		std::cout << "Signing... " << std::flush;
 
 		// Load the keys
-		std::ifstream client_keys(CLIENT_KEYS_CLIENT_FILE), messsage_file(MESSAGE_FILE);
+		std::ifstream client_keys(CLIENT_KEYS_CLIENT_SHARE_FILE), messsage_file(MESSAGE_FILE);
 		if (!client_keys || !messsage_file)
 			throw std::runtime_error("Client key has not been generated or message file is missing!");
 
@@ -81,7 +81,7 @@ private:
 
 		check_num_bits(n1, RSA_PARTIAL_MODULUS_BITS);
 
-		std::ofstream client(CLIENT_KEYS_CLIENT_FILE), server(CLIENT_KEYS_SERVER_FILE);
+		std::ofstream client(CLIENT_KEYS_CLIENT_SHARE_FILE), server(CLIENT_KEYS_SERVER_SHARE_FILE);
 		if (!client || !server)
 			throw std::runtime_error("Could not save the keys!");
 
