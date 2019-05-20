@@ -21,7 +21,7 @@ void SMPC_demo::verify_final_signature() {
 	if (!signature_file || !public_key)
 		throw std::runtime_error("Could not read signature or public key.");
 
-	check_message_and_modulus(message, n, RSA_PARTIAL_MODULUS_BITS * 2);
+	check_message_exponent_and_modulus(message, RSA_PUBLIC_EXP, n, RSA_PARTIAL_MODULUS_BITS * 2);
 	std::cout << (Bignum::mod_exp(signature, RSA_PUBLIC_EXP, n) == message
 	        ? "\x1B[1;32mOK\x1B[0m\n"
 	        : "\x1B[1;31mNOK\x1B[0m\n");
@@ -134,10 +134,14 @@ void check_num_bits(const Bignum& num, unsigned long bits) {
 		throw std::out_of_range("Modulus generated is not a " + std::to_string(bits) + "-bit number!");
 }
 
-void check_message_and_modulus(const Bignum& message, const Bignum& n, unsigned long bits) {
+void check_message_exponent_and_modulus(const Bignum& message, const Bignum& d, const Bignum& n, unsigned long bits) {
 	check_num_bits(n, bits);
-	if (message > n)
-		throw std::out_of_range("Message cannot be greater than the modulus!");
+	if (message >= n)
+		throw std::out_of_range("Message cannot be greater than or equal to the partial modulus!");
+
+	// precise check is impossible without phi(n)
+	if (d >= n)
+		throw std::out_of_range("Private exponent cannot be greater than or equal to the partial modulus!");
 }
 
 bool regenerate_keys() {

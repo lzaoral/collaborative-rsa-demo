@@ -47,7 +47,7 @@ public:
 			throw std::runtime_error("Could not read the client key or the message!");
 
 		// Check and sign
-		check_message_and_modulus(m, n, RSA_PARTIAL_MODULUS_BITS);
+		check_message_exponent_and_modulus(m, d1_client, n, RSA_PARTIAL_MODULUS_BITS);
 		Bignum y = Bignum::mod_exp(m, d1_client, n);
 
 		// Save the signature

@@ -139,11 +139,12 @@ void check_num_bits(const Bignum& num, unsigned long bits);
  * and message is not greater than the modulus.
  * 
  * @param message message
+ * @param d private exponent
  * @param n modulus
  * @param bits needed modulus bit length
  * @throws std::out_of_range if the check fails
  */
-void check_message_and_modulus(const Bignum& message, const Bignum& n, unsigned long bits);
+void check_message_exponent_and_modulus(const Bignum& message, const Bignum& d1, const Bignum& n, unsigned long bits);
 
 /**
  * @brief Asks the user whether he wishes to regenerate the keys.

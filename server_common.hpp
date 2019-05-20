@@ -52,8 +52,8 @@ public:
 			throw std::runtime_error("Could read the given keys or client signature.");
 
 		// Check valid input
-		check_message_and_modulus(m, n1, RSA_PARTIAL_MODULUS_BITS);
-		check_message_and_modulus(m, n2, RSA_PARTIAL_MODULUS_BITS);
+		check_message_exponent_and_modulus(m, d1_server, n1, RSA_PARTIAL_MODULUS_BITS);
+		check_message_exponent_and_modulus(m, d2, n2, RSA_PARTIAL_MODULUS_BITS);
 		check_num_bits(n1 * n2, RSA_PARTIAL_MODULUS_BITS * 2);
 
 		// Finish and check the client signature
