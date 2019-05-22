@@ -31,7 +31,7 @@ void print_usage(const std::string& path) {
 	          << "\tgenerate - Generate and save the [client|server] keys\n"
 	          << "\tsign - Sign the message\n"
 	          << "\tverify - Verify the signature\n"
-	          << "\ttest - One-party key generator self-test\n";
+	          << "\ttest - Single-party key generator self-test\n";
 }
 
 /**
