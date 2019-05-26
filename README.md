@@ -1,5 +1,8 @@
 # JavaCard SMPC RSA Reference Implementation
 
+Reference implementation of the adaptation of the Smart-ID scheme for smart
+cards.
+
 ## Required
 
 * Compiler supporting C++14 or newer required
