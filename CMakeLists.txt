@@ -1,17 +1,22 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.7)
 project(smpc_rsa)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wextra -pedantic -Wold-style-cast")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Wextra -pedantic")
 
-find_package(OpenSSL REQUIRED)
+include(FindOpenSSL)
+find_package(OpenSSL "1.1.1" REQUIRED)
+include_directories(${OPENSSL_INCLUDE_DIR})
 
-if (NOT "${OPENSSL_VERSION}" MATCHES "1.1.1*")
-    message(FATAL_ERROR "OpenSSL 1.1.1 not found")
-endif ()
+set(CMAKE_CXX_CLANG_TIDY clang-tidy --config=)
 
-add_library(common STATIC common.cpp common.hpp client_common.hpp server_common.hpp)
-add_library(openSSLwrapper STATIC bignum_wrapper.cpp bignum_wrapper.hpp rsa_wrapper.hpp)
-set(EXTRA_LIBS OpenSSL::Crypto openSSLwrapper common)
+add_library(common STATIC common.cpp
+                          common.hpp
+                          client_common.hpp
+                          server_common.hpp)
+
+add_library(OpenSSLwrapper STATIC bignum_wrapper.cpp
+                                  bignum_wrapper.hpp
+                                  rsa_wrapper.hpp)
 
 add_executable(smpc_rsa main.cpp)
-target_link_libraries(smpc_rsa ${EXTRA_LIBS})
+target_link_libraries(smpc_rsa OpenSSL::Crypto OpenSSLwrapper common)
