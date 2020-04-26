@@ -131,7 +131,7 @@ private:
  * @param bits expected bit length
  * @throws std::out_of_range if the check fails
  */
-void check_num_bits(const Bignum& num, unsigned long bits);
+void check_num_bits(const Bignum& num, int bits);
 
 /**
  * @brief Checks that the message and the modulus meet
@@ -144,7 +144,7 @@ void check_num_bits(const Bignum& num, unsigned long bits);
  * @param bits needed modulus bit length
  * @throws std::out_of_range if the check fails
  */
-void check_message_exponent_and_modulus(const Bignum& message, const Bignum& d1, const Bignum& n, unsigned long bits);
+void check_message_exponent_and_modulus(const Bignum& message, const Bignum& d1, const Bignum& n, int bits);
 
 /**
  * @brief Asks the user whether he wishes to regenerate the keys.

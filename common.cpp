@@ -129,12 +129,12 @@ void RSA_keys_generator::run_test() {
  * Helper functions *
  *******************/
 
-void check_num_bits(const Bignum& num, unsigned long bits) {
+void check_num_bits(const Bignum& num, int bits) {
 	if (!num.check_num_bits(bits))
 		throw std::out_of_range("Modulus generated is not a " + std::to_string(bits) + "-bit number!");
 }
 
-void check_message_exponent_and_modulus(const Bignum& message, const Bignum& d, const Bignum& n, unsigned long bits) {
+void check_message_exponent_and_modulus(const Bignum& message, const Bignum& d, const Bignum& n, int bits) {
 	check_num_bits(n, bits);
 	if (message >= n)
 		throw std::out_of_range("Message cannot be greater than or equal to the partial modulus!");
