@@ -6,8 +6,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Wextra -pedantic")
 find_package(OpenSSL "1.1.1" REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIRS})
 
-set(CMAKE_CXX_CLANG_TIDY clang-tidy --config=)
-
 add_library(common STATIC common.cpp
                           common.hpp
                           client_common.hpp
@@ -16,6 +14,7 @@ add_library(common STATIC common.cpp
 add_library(OpenSSLwrapper STATIC bignum_wrapper.cpp
                                   bignum_wrapper.hpp
                                   rsa_wrapper.hpp)
+target_link_libraries(OpenSSLwrapper OpenSSL::Crypto)
 
 add_executable(smpc_rsa main.cpp)
-target_link_libraries(smpc_rsa OpenSSL::Crypto OpenSSLwrapper common)
+target_link_libraries(smpc_rsa OpenSSLwrapper common)
