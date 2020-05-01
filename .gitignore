@@ -1,6 +1,9 @@
 *
 
 !.gitignore
+
+!.travis.yml
+
 !.clangformat
 !.clangtidy
 
@@ -10,6 +13,3 @@
 !*.cpp
 !*.hpp
 !*.sh
-
-!.vscode
-!*.json
