@@ -1,0 +1,11 @@
+os: linux
+dist: bionic
+language: cpp
+
+compiler:
+  - clang
+  - gcc
+
+script:
+  - cmake .
+  - make
