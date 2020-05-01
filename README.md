@@ -11,13 +11,13 @@ cards.
 
 ## Compilation
 
-```
+```shell
 cmake -S . -B build && cd build && make
 ```
 
 ## Usage
 
-```
+```shell
 ./smpc_rsa [mode] [action]
 ```
 
@@ -26,4 +26,4 @@ cmake -S . -B build && cd build && make
 The `smpc_test.sh` can be used to test the reference implementation and to
 determine the success rate of usable moduli generation of the reference
 implementation. Expects the `smpc_rsa` and `message.txt` files in the `build`
-folder.
+directory.
