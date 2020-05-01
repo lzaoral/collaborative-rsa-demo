@@ -1,5 +1,7 @@
 # JavaCard SMPC RSA Reference Implementation
 
+[![Build Status](https://travis-ci.org/lzaoral/collaborative-rsa-demo.svg?branch=master)](https://travis-ci.org/lzaoral/collaborative-rsa-demo)
+
 Reference implementation of the adaptation of the Smart-ID scheme for smart
 cards.
 
