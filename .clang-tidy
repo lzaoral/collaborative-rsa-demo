@@ -1,7 +1,7 @@
 ---
-Checks:          'clang-diagnostic-*,clang-analyzer-*,modernize-*,performance-*,portability-*,bugprone-*,misc-*,performance-*,-modernize-use-trailing-return-type'
+Checks:          'clang-diagnostic-*,clang-analyzer-*,modernize-*,performance-*,portability-*,bugprone-*,misc-*,-modernize-use-trailing-return-type'
 WarningsAsErrors: '*'
-HeaderFilterRegex: ''
+HeaderFilterRegex: '.*'
 AnalyzeTemporaryDtors: true
 FormatStyle:     none
 User:            lukas
