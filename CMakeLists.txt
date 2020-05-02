@@ -4,11 +4,12 @@ project(smpc_rsa)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Wextra -pedantic")
 
 find_package(OpenSSL "1.1.1" REQUIRED)
-include_directories(${OPENSSL_INCLUDE_DIRS})
+include_directories(${OPENSSL_INCLUDE_DIR})
 
 find_program(CLANG_TIDY_BINARY clang-tidy)
 if(CLANG_TIDY_BINARY)
   set(CMAKE_CXX_CLANG_TIDY clang-tidy --config=)
+  message(STATUS "Using clang-tidy: ${CLANG_TIDY_BINARY}")
 else()
   set(CMAKE_CXX_CLANG_TIDY "" FORCE)
 endif()
